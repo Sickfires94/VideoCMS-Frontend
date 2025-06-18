@@ -1,0 +1,3 @@
+/* src/app/features/auth/components/register/register.component.scss */
+/* You can largely reuse the styles from login.component.scss if they are similar */
+@use '../login/login.component.scss'; // <--- Change @import to @use

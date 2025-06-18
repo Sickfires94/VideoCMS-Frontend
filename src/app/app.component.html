@@ -1,0 +1,20 @@
+<nav class="navbar">
+  <div class="navbar-brand">{{ title }}</div>
+  <div class="navbar-links">
+    <ng-container *ngIf="!(authFacade.isAuthenticated$ | async); else loggedInLinks">
+      <a routerLink="/login" routerLinkActive="active">Login</a>
+      <a routerLink="/register" routerLinkActive="active">Register</a>
+    </ng-container>
+    <ng-template #loggedInLinks>
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <span class="nav-username" *ngIf="authFacade.currentUser$ | async as user">
+        Hello, {{ user.username }}!
+      </span>
+      <button class="logout-button" (click)="authFacade.logout()">Logout</button>
+    </ng-template>
+  </div>
+</nav>
+
+<main class="content">
+  <router-outlet></router-outlet>
+</main>

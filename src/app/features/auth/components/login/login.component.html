@@ -1,0 +1,62 @@
+<div class="auth-container">
+    <h2>Login to Your Account</h2>
+  
+    <form [formGroup]="viewModel.loginForm" (ngSubmit)="viewModel.login()">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          type="text"
+          formControlName="username"
+          placeholder="Enter your username"
+        />
+        <div
+          *ngIf="
+            viewModel.usernameControl?.invalid &&
+            (viewModel.usernameControl?.dirty ||
+              viewModel.usernameControl?.touched)
+          "
+          class="error-message"
+        >
+          <span *ngIf="viewModel.usernameControl?.errors?.['required']">
+            Username is required.
+          </span>
+        </div>
+      </div>
+  
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Enter your password"
+        />
+        <div
+          *ngIf="
+            viewModel.passwordControl?.invalid &&
+            (viewModel.passwordControl?.dirty ||
+              viewModel.passwordControl?.touched)
+          "
+          class="error-message"
+        >
+          <span *ngIf="viewModel.passwordControl?.errors?.['required']">
+            Password is required.
+          </span>
+        </div>
+      </div>
+  
+      <button type="submit" [disabled]="viewModel.loginForm.invalid || (viewModel.isLoading$ | async)">
+        <span *ngIf="!(viewModel.isLoading$ | async)">Login</span>
+        <span *ngIf="viewModel.isLoading$ | async">Logging in...</span>
+      </button>
+  
+      <div *ngIf="viewModel.errorMessage$ | async" class="alert alert-danger">
+        {{ viewModel.errorMessage$ | async }}
+      </div>
+    </form>
+  
+    <p class="auth-link">
+      Don't have an account? <a routerLink="/register">Register here</a>.
+    </p>
+  </div>
