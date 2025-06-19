@@ -1,0 +1,10 @@
+<!-- src/app/core/components/global-notification/global-notification.component.html -->
+<div class="fixed top-4 right-4 z-50 flex flex-col items-end space-y-3">
+    <!-- Ensure this loop is present and correctly uses the component -->
+    <app-message-box
+      *ngFor="let notification of activeNotifications"
+      [type]="notification.type"
+      [message]="notification.message"
+      (dismissed)="dismissNotification(notification.id)"
+    ></app-message-box>
+  </div>

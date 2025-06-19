@@ -9,11 +9,11 @@ import { LoginPayload } from '../models/login-payload.model';
 import { RegisterPayload } from '../models/register-payload.model';
 import { User } from '../models/user.model';
 import { AuthApiService } from './auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Injectable({
   providedIn: 'root'
 })
-// FIX: Ensure 'export' keyword is present here
 export class AuthFacade {
   private _isAuthenticated = new BehaviorSubject<boolean>(false);
   public readonly isAuthenticated$: Observable<boolean> = this._isAuthenticated.asObservable();
@@ -24,7 +24,8 @@ export class AuthFacade {
   constructor(
     private authApi: AuthApiService,
     private tokenStorage: TokenStorageService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService // Inject NotificationService
   ) {
     this.initializeAuthStatus();
   }
@@ -44,14 +45,17 @@ export class AuthFacade {
 
   public login(payload: LoginPayload): Observable<AuthResponse> {
     return this.authApi.login(payload).pipe(
-        tap((response: AuthResponse) => {
-          this.tokenStorage.saveToken(response.token);
-          this.tokenStorage.saveUser(response.user);
-          this.setAuthenticatedState(response.user);
-          this.router.navigateByUrl('/dashboard');
-        }),
+      tap((response: AuthResponse) => {
+        this.tokenStorage.saveToken(response.token);
+        this.tokenStorage.saveUser(response.user);
+        this.setAuthenticatedState(response.user);
+        this.notificationService.showSuccess('Login successful!'); // Success notification
+        this.router.navigateByUrl('/'); // Or wherever your main app dashboard is
+      }),
       catchError(error => {
         console.error('AuthFacade: Login error', error);
+        // ApiService already shows a generic error, but you can add more specific ones here if needed
+        this.notificationService.showError('Login failed. Please check your credentials.');
         return throwError(() => error);
       })
     );
@@ -63,10 +67,12 @@ export class AuthFacade {
         this.tokenStorage.saveToken(response.token);
         this.tokenStorage.saveUser(response.user);
         this.setAuthenticatedState(response.user);
-        this.router.navigateByUrl('/dashboard');
+        this.notificationService.showSuccess('Registration successful!'); // Success notification
+        this.router.navigateByUrl('/upload');
       }),
       catchError(error => {
         console.error('AuthFacade: Registration error', error);
+        this.notificationService.showError('Registration failed. Please try again.');
         return throwError(() => error);
       })
     );
@@ -76,9 +82,10 @@ export class AuthFacade {
     this.tokenStorage.clear();
     this._isAuthenticated.next(false);
     this._currentUser.next(null);
+    //this.notificationService.showInfo('You have been logged out.'); // Info notification
     this.router.navigateByUrl('/login');
   }
- 
+
   public getToken(): string | null {
     return this.tokenStorage.getToken();
   }

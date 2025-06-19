@@ -6,7 +6,7 @@
       <a routerLink="/register" routerLinkActive="active">Register</a>
     </ng-container>
     <ng-template #loggedInLinks>
-      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a routerLink="/upload" routerLinkActive="active">Upload</a>
       <span class="nav-username" *ngIf="authFacade.currentUser$ | async as user">
         Hello, {{ user.username }}!
       </span>

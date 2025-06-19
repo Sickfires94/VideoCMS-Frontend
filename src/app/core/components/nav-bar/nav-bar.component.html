@@ -1,0 +1,32 @@
+<nav class="bg-gray-800 p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <!-- Brand/Logo -->
+      <a routerLink="/" class="text-white text-2xl font-bold rounded-lg px-3 py-1 hover:bg-gray-700 transition duration-300">
+        VideoCMS
+      </a>
+  
+      <!-- Navigation Links/Buttons -->
+      <div class="flex items-center space-x-4">
+        <ng-container *ngIf="!isAuthenticated">
+          <a routerLink="/login" class="text-white hover:text-gray-300 font-medium px-4 py-2 rounded-lg transition duration-300 hover:bg-gray-700">
+            Login
+          </a>
+          <a routerLink="/register" class="bg-blue-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
+            Register
+          </a>
+        </ng-container>
+  
+        <ng-container *ngIf="isAuthenticated">
+          <span *ngIf="currentUser" class="text-gray-300 text-lg font-semibold mr-4">
+            Welcome, {{ currentUser.userName || currentUser.userEmail }}!
+          </span>
+          <a routerLink="/upload" class="bg-purple-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-300 shadow-md">
+            Upload Video
+          </a>
+          <button (click)="onLogout()" class="bg-red-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300 shadow-md">
+            Logout
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </nav>

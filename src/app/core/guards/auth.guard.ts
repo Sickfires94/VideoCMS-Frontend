@@ -1,9 +1,9 @@
 // src/app/core/guards/auth.guard.ts
 import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { AuthFacade } from '../../features/auth/services/auth.facade'; // Depend on AuthFacade
+import { map, take } from 'rxjs/operators';
+import { AuthFacade } from '../../features/auth/services/auth.facade';
 
 @Injectable({
   providedIn: 'root'
@@ -11,8 +11,12 @@ import { AuthFacade } from '../../features/auth/services/auth.facade'; // Depend
 export class AuthGuard implements CanActivate {
   constructor(private authFacade: AuthFacade, private router: Router) {}
 
-  canActivate(): Observable<boolean | UrlTree> {
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+
     return this.authFacade.isAuthenticated$.pipe(
+      take(1), // Take only the first value and complete
       map(isAuthenticated => {
         if (isAuthenticated) {
           return true; // User is authenticated, allow access

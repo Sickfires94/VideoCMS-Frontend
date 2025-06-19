@@ -5,15 +5,16 @@ import { Observable } from 'rxjs';
 import { AuthResponse } from '../models/auth-response.model';
 import { LoginPayload } from '../models/login-payload.model';
 import { RegisterPayload } from '../models/register-payload.model';
+import { ApiService } from '../../../core/api/api.service';
 
 @Injectable({
   providedIn: 'root' // Provided globally, used by AuthFacade
 })
 export class AuthApiService {
   // Centralize API URLs, potentially in an environment file
-  private authApiBaseUrl = 'http://localhost:5000/api/auth';
+  private authApiPath = '/Users';
 
-  constructor(private http: HttpClient) {}
+  constructor(private apiService: ApiService) {}
 
   /**
    * Sends login credentials to the backend API.
@@ -21,7 +22,7 @@ export class AuthApiService {
    * @returns An Observable of AuthResponse containing token and user info.
    */
   login(payload: LoginPayload): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.authApiBaseUrl}/login`, payload);
+    return this.apiService.post<AuthResponse>(`${this.authApiPath}/login`, payload);
   }
 
   /**
@@ -30,7 +31,7 @@ export class AuthApiService {
    * @returns An Observable of AuthResponse upon successful registration.
    */
   register(payload: RegisterPayload): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.authApiBaseUrl}/register`, payload);
+    return this.apiService.post<AuthResponse>(`${this.authApiPath}/register`, payload);
   }
 
   // Future methods:

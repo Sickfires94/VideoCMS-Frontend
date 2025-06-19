@@ -18,17 +18,17 @@ export class LoginViewModel {
 
   constructor() {
     this.loginForm = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required]
+      userEmail: ['', Validators.required],
+      userPassword: ['', Validators.required]
     });
   }
 
   // Public getters for form controls to bind in template
   get usernameControl() {
-    return this.loginForm.get('username');
+    return this.loginForm.get('userEmail');
   }
   get passwordControl() {
-    return this.loginForm.get('password');
+    return this.loginForm.get('userPassword');
   }
 
   /**

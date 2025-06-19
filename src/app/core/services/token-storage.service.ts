@@ -41,7 +41,9 @@ export class TokenStorageService {
    * @returns The stored User object or null if not found/parse error.
    */
   public getUser(): User | null {
+    console.log("getting key")
     const userJson = localStorage.getItem(USER_KEY);
+    console.log("got Key")
     try {
       return userJson ? JSON.parse(userJson) : null;
     } catch (e) {

@@ -1,0 +1,21 @@
+<div class="border px-4 py-3 rounded relative" [ngClass]="classes" role="alert">
+    <div class="flex items-center">
+      <div class="py-1">
+        <svg class="fill-current h-6 w-6 mr-4" viewBox="0 0 24 24">
+          <path [attr.d]="icon"></path> <!-- FIX: Changed to [attr.d] for SVG attribute binding -->
+        </svg>
+      </div>
+      <div class="flex-grow">
+        <p class="font-bold">{{ type | titlecase }}!</p>
+        <p class="text-sm">{{ message }}</p>
+      </div>
+      <div *ngIf="showDismissButton" class="flex-shrink-0 ml-4">
+        <button (click)="onDismiss()" class="bg-transparent border-none text-current opacity-75 hover:opacity-100 focus:outline-none">
+          <svg class="h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <title>Close</title>
+            <path d="M14.348 14.849a1.2 1.2 0 01-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 11-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 111.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 111.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 010 1.698z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>

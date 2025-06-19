@@ -1,0 +1,16 @@
+<div class="flex flex-col items-center justify-center p-4">
+    <div
+      class="animate-spin rounded-full border-t-2 border-b-2"
+      [ngClass]="{
+        'h-5 w-5': size === 'small',
+        'h-8 w-8': size === 'medium',
+        'h-12 w-12': size === 'large',
+        'border-blue-500': color === 'blue',
+        'border-gray-500': color === 'gray',
+        'border-green-500': color === 'green',
+        'border-red-500': color === 'red',
+        'border-purple-500': color === 'purple'
+      }"
+    ></div>
+    <p *ngIf="message" class="mt-2 text-sm text-gray-600">{{ message }}</p>
+  </div>

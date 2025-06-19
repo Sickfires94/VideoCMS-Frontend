@@ -3,12 +3,12 @@
   
     <form [formGroup]="viewModel.loginForm" (ngSubmit)="viewModel.login()">
       <div class="form-group">
-        <label for="username">Username</label>
+        <label for="userEmail">Enter you Email</label>
         <input
-          id="username"
+          id="userEmail"
           type="text"
-          formControlName="username"
-          placeholder="Enter your username"
+          formControlName="userEmail"
+          placeholder="Email here"
         />
         <div
           *ngIf="
@@ -25,12 +25,12 @@
       </div>
   
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="userPassword">Enter your password</label>
         <input
-          id="password"
+          id="userPassword"
           type="password"
-          formControlName="password"
-          placeholder="Enter your password"
+          formControlName="userPassword"
+          placeholder="Password here"
         />
         <div
           *ngIf="

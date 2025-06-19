@@ -18,24 +18,24 @@ export class RegisterViewModel {
 
   constructor() {
     this.registerForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      userName: ['', [Validators.required, Validators.minLength(3)]],
+      userEmail: ['', [Validators.required, Validators.email]],
+      userPassword: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
   }
 
   // Custom validator for password confirmation
   private passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password')?.value;
+    const userPassword = form.get('userPassword')?.value;
     const confirmPassword = form.get('confirmPassword')?.value;
-    return password === confirmPassword ? null : { mismatch: true };
+    return userPassword === confirmPassword ? null : { mismatch: true };
   }
 
   // Public getters for form controls
   get usernameControl() { return this.registerForm.get('username'); }
-  get emailControl() { return this.registerForm.get('email'); }
-  get passwordControl() { return this.registerForm.get('password'); }
+  get emailControl() { return this.registerForm.get('userEmail'); }
+  get passwordControl() { return this.registerForm.get('userPassword'); }
   get confirmPasswordControl() { return this.registerForm.get('confirmPassword'); }
 
   /**

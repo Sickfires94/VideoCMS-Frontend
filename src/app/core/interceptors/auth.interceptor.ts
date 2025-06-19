@@ -1,33 +1,38 @@
 // src/app/core/interceptors/auth.interceptor.ts
-import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthFacade } from '../../features/auth/services/auth.facade';
+import { Injectable } from '@angular/core';
+import {
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  HttpInterceptor // IMPORTANT: Ensure HttpInterceptor is imported
+} from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { TokenStorageService } from '../services/token-storage.service'; // Adjust path if necessary
 
-export const AuthInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
-  const authFacade: AuthFacade = inject(AuthFacade);
-  const router = inject(Router);
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor { // <-- Define AuthInterceptor as a class implementing HttpInterceptor
 
-  const token = authFacade.getToken();
+  constructor(private tokenStorageService: TokenStorageService) {}
 
-  if (token) {
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+  /**
+   * Intercepts outgoing HTTP requests to add an Authorization header if a token exists.
+   * @param request The outgoing HttpRequest.
+   * @param next The next HttpHandler in the chain.
+   * @returns An Observable of HttpEvent.
+   */
+  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    const token = this.tokenStorageService.getToken(); // Retrieve the authentication token
+
+    if (token) {
+      // Clone the request and add the Authorization header with the Bearer token
+      request = request.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}` // Add the token to the Authorization header
+        }
+      });
+    }
+
+    // Pass the cloned request (with or without the header) to the next handler in the chain
+    return next.handle(request);
   }
-
-  // FIX IS HERE: Call 'next' directly as a function, instead of 'next.handle()'
-  return next(req).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 || error.status === 403) {
-        console.error('Authentication Error:', error.status, error.message);
-        authFacade.logout();
-      }
-      return throwError(() => error);
-    })
-  );
-};
+}
