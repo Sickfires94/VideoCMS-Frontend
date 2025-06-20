@@ -1,10 +1,9 @@
-<!-- VIEW: Renders the file selection UI. Binds to ViewModel properties and events. -->
 <div class="p-4 bg-white rounded-lg shadow-md mb-4">
   <label for="fileInput" class="block text-lg font-semibold text-gray-700 mb-2">Select Video File</label>
   <div class="flex items-center space-x-3">
     <input
       id="fileInput"
-      type="file"
+      #fileInputRef type="file"
       accept="video/*"
       (change)="onFileChange($event)"
       class="hidden"
@@ -12,8 +11,7 @@
     >
     <button
       type="button"
-      (click)="onFileChange($event)"
-      class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 ease-in-out"
+      (click)="openFileBrowser()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 ease-in-out"
       [disabled]="isUploading"
     >
       Browse

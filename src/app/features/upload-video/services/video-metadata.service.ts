@@ -10,7 +10,7 @@ import { VideoMetadataDto } from '../../../shared/models/video';
   providedIn: 'root'
 })
 export class VideoMetadataService {
-  private readonly baseUrl = 'api/video'; // Base URL for video metadata API
+  private readonly baseUrl = '/video'; // Base URL for video metadata API
 
   constructor(
     private apiService: ApiService,
@@ -33,7 +33,7 @@ export class VideoMetadataService {
       videoDescription: metadata.videoDescription,
       videoUrl: metadata.videoUrl,
       videoTags: metadata.videoTags || [], // Ensure it's an array, even if empty
-      categoryId: metadata.categoryId,
+      categoryId: metadata.category?.categoryId,
       userId: metadata.userId
       // videoUploadDate and videoUpdatedDate are backend-generated
       // videoId is backend-generated

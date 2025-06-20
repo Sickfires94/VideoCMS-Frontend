@@ -1,0 +1,19 @@
+<!-- src/app/features/video-searching/components/video-list/video-list.component.html -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
+    <ng-container *ngIf="!isLoading && videos.length > 0">
+      <app-video-card *ngFor="let video of videos" [video]="video"></app-video-card>
+    </ng-container>
+  
+    <ng-container *ngIf="!isLoading && videos.length === 0">
+      <div class="col-span-full text-center p-8 bg-white rounded-lg shadow-md">
+        <p class="text-gray-600 text-lg">No videos found matching your criteria.</p>
+        <p class="text-gray-500 text-sm mt-2">Try adjusting your search terms or filters.</p>
+      </div>
+    </ng-container>
+  
+    <ng-container *ngIf="isLoading">
+      <div class="col-span-full text-center p-8">
+        <app-loading-spinner message="Loading videos..."></app-loading-spinner>
+      </div>
+    </ng-container>
+  </div>

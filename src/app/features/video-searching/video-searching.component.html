@@ -1,0 +1,14 @@
+<!-- src/app/features/video-searching/video-searching.component.html -->
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen font-sans">
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+      Video Search
+    </h1>
+  
+    <!-- Search Bar Component -->
+    <app-search-bar (search)="onSearch($event)"></app-search-bar>
+  
+    <!-- Video List Component -->
+    <app-video-list [videos]="videos" [isLoading]="isLoadingVideos"></app-video-list>
+  
+    <!-- TODO: Add pagination controls here based on PaginatedVideoResult -->
+  </div>

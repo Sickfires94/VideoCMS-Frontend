@@ -1,18 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core'; // Import OnDestroy
+
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { BlobStorageService } from '../../services/blob-storage.service';
+import { BlobStorageService } from '../../services/blob-storage.service'; // Ensure this is the updated service
 import { TagsGenerationService } from '../../services/tags-generation.service';
 import { VideoMetadataService } from '../../services/video-metadata.service';
 
 import { finalize } from 'rxjs/operators';
 import { HttpEventType, HttpEvent } from '@angular/common/http';
-import { CommonModule } from '@angular/common'; // Required for ngIf, ngFor etc.
-// Import standalone components used in its template
+import { CommonModule } from '@angular/common';
 import { FileSelectorComponent } from '../file-selector/file-selector.component';
 import { TagInputComponent } from '../tag-input/tag-input.component';
 import { CategorySelectorComponent } from '../category-selector/category-selector.component';
 
-import { Subscription } from 'rxjs'; // Import Subscription
+import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { CategoryDto } from '../../../../shared/models/category';
 import { TagDto } from '../../../../shared/models/tag';
@@ -32,13 +32,13 @@ import { AuthFacade } from '../../../auth/services/auth.facade';
     CategorySelectorComponent
   ],
   templateUrl: './video-upload-form.component.html',
-  styleUrls: ['./video-upload-form.component.scss'] // Assuming file exists
+  styleUrls: ['./video-upload-form.component.scss']
 })
-export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implement OnDestroy
+export class VideoUploadFormComponent implements OnInit, OnDestroy {
   uploadForm!: FormGroup;
   selectedFile: File | null = null;
   suggestedTags: string[] = [];
-  selectedTags: string[] = []; // Still array of strings from TagInputComponent
+  selectedTags: string[] = [];
   selectedCategory: CategoryDto | null = null;
 
   isGeneratingTags: boolean = false;
@@ -47,9 +47,9 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
   fileUploadProgress: number | null = null;
   isSubmittingMetadata: boolean = false;
 
-  private uploadedVideoUrl: string | null = null; // Renamed to avoid confusion
-  private currentUserId: number | null = null; // FIX: Changed to number or null
-  private authSubscription!: Subscription; // To manage subscription
+  private uploadedVideoUrl: string | null = null;
+  private currentUserId: number | null = null;
+  private authSubscription!: Subscription;
 
   constructor(
     private fb: FormBuilder,
@@ -57,7 +57,7 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
     private tagsGenerationService: TagsGenerationService,
     private videoMetadataService: VideoMetadataService,
     private notificationService: NotificationService,
-    private authFacade: AuthFacade // Inject AuthFacade
+    private authFacade: AuthFacade
   ) { }
 
   ngOnInit(): void {
@@ -66,15 +66,12 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
       description: ['', Validators.required],
     });
 
-    // Subscribe to currentUser$ to get the userId
     this.authSubscription = this.authFacade.currentUser$.subscribe(
       (user: User | null) => {
-        if (user && user.userId) { // Ensure user and userId exist
+        if (user && user.userId) {
           this.currentUserId = user.userId;
         } else {
-          this.currentUserId = null; // User not logged in or userId not available
-          // Optionally, redirect to login page if userId is crucial for this page
-          // this.router.navigate(['/login']);
+          this.currentUserId = null;
         }
       }
     );
@@ -82,7 +79,7 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
 
   ngOnDestroy(): void {
     if (this.authSubscription) {
-      this.authSubscription.unsubscribe(); // Unsubscribe to prevent memory leaks
+      this.authSubscription.unsubscribe();
     }
   }
 
@@ -91,6 +88,8 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
     this.isFileUploaded = false;
     this.fileUploadProgress = null;
     this.uploadedVideoUrl = null;
+    this.suggestedTags = []; // Clear suggested tags on new file selection
+    this.selectedTags = []; // Clear selected tags on new file selection
   }
 
   onTagsChanged(tags: string[]): void {
@@ -114,12 +113,13 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
     this.tagsGenerationService.generateTags(name, description).pipe(
       finalize(() => this.isGeneratingTags = false)
     ).subscribe({
-      next: (tags: string[]) => { // Explicitly type 'tags'
+      next: (tags: string[]) => {
         this.suggestedTags = tags;
         this.notificationService.showSuccess('AI suggested tags generated!');
       },
-      error: (err: any) => { // Explicitly type 'err'
+      error: (err: any) => {
         console.error('Failed to generate suggested tags:', err);
+        this.notificationService.showError('Failed to generate suggested tags.'); // Show error to user
       }
     });
   }
@@ -141,9 +141,9 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
     if (this.selectedTags.length === 0) {
       this.notificationService.showWarning('Please add at least one tag for the video.');
     }
-    if (this.currentUserId === null) { // Ensure userId is available before proceeding
-        this.notificationService.showError('User not logged in. Cannot upload video.');
-        return;
+    if (this.currentUserId === null) {
+      this.notificationService.showError('User not logged in. Cannot upload video.');
+      return;
     }
 
     this.isUploadingFile = true;
@@ -151,91 +151,115 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy { // Implemen
 
     try {
       this.notificationService.showInfo('Starting video upload...');
-      // Direct file upload without SAS token now
-      this.blobStorageService.uploadFile(this.selectedFile) // Call the new uploadFile method
-        .pipe(finalize(() => this.isUploadingFile = false))
+
+      // --- Use the new SAS token based upload method ---
+      this.blobStorageService.uploadFileWithSas(this.selectedFile)
+        .pipe(
+          finalize(() => {
+            this.isUploadingFile = false; // Reset loading state regardless of success/error
+          })
+        )
         .subscribe({
           next: (event: HttpEvent<any>) => {
             if (event.type === HttpEventType.UploadProgress) {
               this.fileUploadProgress = Math.round((100 * event.loaded) / (event.total || 1));
             } else if (event.type === HttpEventType.Response) {
-              // The OpenAPI /upload endpoint returns 200 OK without a body.
-              // Assuming the backend provides the URL of the uploaded blob in the response headers or body
-              // For now, setting a dummy URL as it's not explicitly in OpenAPI response.
-              this.uploadedVideoUrl = `https://yourblobstorage.com/videos/${this.selectedFile?.name}`; // FIX: Dummy URL
-              this.notificationService.showSuccess('Video file uploaded successfully!');
-              this.isFileUploaded = true;
+              // On successful response from Azure Blob Storage (via PUT)
+              // The `event.url` contains the full SAS URI that was used for the upload.
+              // We need to extract the base URL of the uploaded blob from it.
+              const sasUri = event.url;
+              if (sasUri) {
+                // Parse the URI to remove the SAS query parameters.
+                // The base blob URL is the part before the '?'
+                this.uploadedVideoUrl = sasUri.split('?')[0];
+                this.notificationService.showSuccess('Video file uploaded successfully!');
+                this.isFileUploaded = true;
 
-              // Step 3: Submit video metadata
-              this.submitMetadata();
+                // Proceed to submit metadata after successful file upload
+                this.submitMetadata();
+              } else {
+                this.notificationService.showError('Upload successful, but video URL could not be determined.');
+                console.error('SAS URI was unexpectedly null or empty in HttpEventType.Response');
+                this.resetFormOnUploadError(); // Reset form if URL is not determined
+              }
             }
           },
           error: (err: any) => {
-            this.notificationService.showError('Video file upload failed.');
-            console.error('Direct upload error:', err);
-            this.isUploadingFile = false;
-            this.isFileUploaded = false;
-            this.fileUploadProgress = null;
+            // Error handling from blobStorageService.uploadFileWithSas already shows notification
+            console.error('Video file upload failed (via SAS):', err);
+            this.resetFormOnUploadError();
           }
         });
 
     } catch (err: any) {
-      this.notificationService.showError('Failed to prepare for video upload.');
-      console.error('Upload initiation error:', err);
-      this.isUploadingFile = false;
-      this.isFileUploaded = false;
-      this.fileUploadProgress = null;
+      this.notificationService.showError('Failed to initiate video upload process.');
+      console.error('Upload initiation error (try-catch block):', err);
+      this.resetFormOnUploadError();
     }
+  }
+
+  private resetFormOnUploadError(): void {
+    this.isUploadingFile = false;
+    this.isFileUploaded = false;
+    this.fileUploadProgress = null;
+    this.uploadedVideoUrl = null;
   }
 
   private submitMetadata(): void {
     if (!this.uploadedVideoUrl) {
       this.notificationService.showError('Video URL is missing. Cannot submit metadata.');
+      this.isSubmittingMetadata = false; // Ensure loading state is reset
       return;
     }
     if (this.currentUserId === null) {
       this.notificationService.showError('User ID is missing. Cannot submit metadata.');
+      this.isSubmittingMetadata = false; // Ensure loading state is reset
       return;
     }
 
     this.isSubmittingMetadata = true;
     this.notificationService.showInfo('Saving video details...');
 
-    // Transform selectedTags (string[]) to TagDto[] as expected by VideoMetadataDto/backend
     const videoTags: TagDto[] = this.selectedTags.map(tagName => ({ tagName: tagName }));
 
     const videoMetadata: VideoMetadataDto = {
       videoName: this.uploadForm.get('name')?.value,
       videoDescription: this.uploadForm.get('description')?.value,
       videoUrl: this.uploadedVideoUrl,
-      userId: this.currentUserId, // Use the dynamically obtained userId
-      categoryId: this.selectedCategory?.categoryId, // Use categoryId
-      videoTags: videoTags // Pass array of TagDto objects
-      // videoId, videoUploadDate, videoUpdatedDate are handled by backend on POST
+      userId: this.currentUserId,
+      category: this.selectedCategory ?? undefined,
+      videoTags: videoTags
     };
 
     this.videoMetadataService.submitVideoMetadata(videoMetadata).pipe(
       finalize(() => {
         this.isSubmittingMetadata = false;
-        this.uploadForm.reset();
-        this.selectedFile = null;
-        this.suggestedTags = [];
-        this.selectedTags = [];
-        this.selectedCategory = null;
-        this.isFileUploaded = false;
-        this.fileUploadProgress = null;
-        this.uploadedVideoUrl = null;
+        // Form reset and cleanup moved here, as it's the final step after metadata submission
+        this.resetFormAndState();
       })
     ).subscribe({
       next: (response: VideoMetadataDto) => {
         this.notificationService.showSuccess('Video metadata saved successfully! Video is now processing.');
-        // Optionally navigate to a success page or video detail page
-        // this.router.navigate(['/video', response.videoId]); // Use videoId
       },
       error: (err: any) => {
         console.error('Failed to save video metadata:', err);
+        this.notificationService.showError('Failed to save video metadata.'); // Show error to user
       }
     });
+  }
+
+  private resetFormAndState(): void {
+    this.uploadForm.reset();
+    this.selectedFile = null;
+    this.suggestedTags = [];
+    this.selectedTags = [];
+    this.selectedCategory = null;
+    this.isFileUploaded = false;
+    this.fileUploadProgress = null;
+    this.uploadedVideoUrl = null;
+    this.isGeneratingTags = false; // Reset all loading/state flags
+    this.isUploadingFile = false;
+    this.isSubmittingMetadata = false;
   }
 
   get f() {

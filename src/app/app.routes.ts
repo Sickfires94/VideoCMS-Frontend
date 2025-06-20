@@ -19,5 +19,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard] // Protect the upload route
   },
 
+  {
+    path: 'search', // <-- NEW ROUTE FOR VIDEO SEARCHING
+    loadChildren: () => import('./features/video-searching/video-searching.module').then(m => m.VideoSearchingModule),
+    canActivate: [AuthGuard] // Protect the upload route
+  },
+  
+
   { path: '**', redirectTo: '/login' }
 ];

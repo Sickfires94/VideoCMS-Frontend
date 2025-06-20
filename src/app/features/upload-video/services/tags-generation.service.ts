@@ -35,7 +35,7 @@ export class TagsGenerationService {
 
     // Change to GET request and pass the HttpParams object directly
     // FIX: Removed the extra object literal { params: params }
-    return this.apiService.get<string[]>(url, params).pipe(
+    return this.apiService.get<string[]>(url, {params}).pipe(
       catchError(error => {
         this.notificationService.showError('Failed to generate tags. Please try again.');
         console.error('Error generating tags:', error);

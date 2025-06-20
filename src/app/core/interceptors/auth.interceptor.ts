@@ -8,6 +8,7 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TokenStorageService } from '../services/token-storage.service'; // Adjust path if necessary
+import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor { // <-- Define AuthInterceptor as a class implementing HttpInterceptor
@@ -23,11 +24,13 @@ export class AuthInterceptor implements HttpInterceptor { // <-- Define AuthInte
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.tokenStorageService.getToken(); // Retrieve the authentication token
 
-    if (token) {
-      // Clone the request and add the Authorization header with the Bearer token
+    const isApiRequest = request.url.startsWith(environment.apiBaseUrl);
+
+    // Only add the Authorization header if a token exists AND it's an API request
+    if (token && isApiRequest) {
       request = request.clone({
         setHeaders: {
-          Authorization: `Bearer ${token}` // Add the token to the Authorization header
+          Authorization: `Bearer ${token}`
         }
       });
     }

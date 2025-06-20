@@ -18,7 +18,7 @@ export class PublicGuard implements CanActivate {
           return true; // User is not authenticated, allow access to public routes
         } else {
           // User is authenticated, redirect to dashboard or another protected page
-          return this.router.createUrlTree(['/upload']);
+          return this.router.createUrlTree(['/search']);
         }
       })
     );
