@@ -1,0 +1,25 @@
+<!-- src/app/features/video-detail/components/video-player/video-player.component.html -->
+<div class="relative w-full overflow-hidden bg-black rounded-lg shadow-lg" style="padding-top: 56.25%;">
+    <!-- 16:9 Aspect Ratio (9 / 16 * 100 = 56.25%) -->
+    <video
+      #videoElement
+      *ngIf="videoUrl"
+      [src]="videoUrl"
+      (canplay)="onCanPlay()"
+      (error)="onError($event)"
+      controls
+      class="absolute top-0 left-0 w-full h-full object-contain"
+      preload="auto"
+    >
+      Your browser does not support the video tag.
+    </video>
+  
+    <div *ngIf="!videoUrl" class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-900 text-white text-lg">
+      No video URL provided.
+    </div>
+  
+    <!-- You might add a loading spinner here until isReadyToPlay is true -->
+    <!-- <div *ngIf="videoUrl && !isReadyToPlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+      <app-loading-spinner></app-loading-spinner>
+    </div> -->
+  </div>

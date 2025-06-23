@@ -3,9 +3,9 @@ export interface VideoMetadataSearchDto {
     videoName: string,
     videoDescription: string,
     videoUpdatedDate: Date,
-    videoUploadedDate: Date,
+    videoUploadDate: Date,
     videoUrl: string,
     categoryName: string,
     videoTagNames: string[],
-    username: string,
+    userName: string,
 }

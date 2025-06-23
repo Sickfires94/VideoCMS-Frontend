@@ -19,6 +19,7 @@ import { TagDto } from '../../../../shared/models/tag';
 import { VideoMetadataDto } from '../../../../shared/models/video';
 import { User } from '../../../auth/models/user.model';
 import { AuthFacade } from '../../../auth/services/auth.facade';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -52,6 +53,7 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy {
   private authSubscription!: Subscription;
 
   constructor(
+    private router: Router,
     private fb: FormBuilder,
     private blobStorageService: BlobStorageService,
     private tagsGenerationService: TagsGenerationService,
@@ -234,12 +236,11 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy {
     this.videoMetadataService.submitVideoMetadata(videoMetadata).pipe(
       finalize(() => {
         this.isSubmittingMetadata = false;
-        // Form reset and cleanup moved here, as it's the final step after metadata submission
-        this.resetFormAndState();
       })
     ).subscribe({
       next: (response: VideoMetadataDto) => {
-        this.notificationService.showSuccess('Video metadata saved successfully! Video is now processing.');
+        this.notificationService.showSuccess('Video metadata saved successfully!');
+        this.router.navigate([`/video/${response.videoId}`]);
       },
       error: (err: any) => {
         console.error('Failed to save video metadata:', err);

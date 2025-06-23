@@ -33,6 +33,7 @@ export class AuthFacade {
   private initializeAuthStatus(): void {
     const token = this.tokenStorage.getToken();
     const user = this.tokenStorage.getUser();
+    console.log(`Setting Auth user to: ${user?.userId} ` )
     if (token && user) {
       this.setAuthenticatedState(user);
     }
@@ -78,12 +79,22 @@ export class AuthFacade {
     );
   }
 
+
+
   public logout(): void {
     this.tokenStorage.clear();
     this._isAuthenticated.next(false);
     this._currentUser.next(null);
     //this.notificationService.showInfo('You have been logged out.'); // Info notification
     this.router.navigateByUrl('/login');
+  }
+
+  public getUser() : User | null{
+    return this.tokenStorage.getUser()
+  }
+
+  public getUserId() : number | null {
+    return this.tokenStorage.getUser()?.userId ?? null
   }
 
   public getToken(): string | null {

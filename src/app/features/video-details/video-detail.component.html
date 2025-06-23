@@ -1,0 +1,79 @@
+<div class="container mx-auto p-6 bg-gray-100 min-h-screen font-sans">
+  <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-6 sm:p-8 space-y-6">
+
+    <div *ngIf="isLoading" class="text-center p-10">
+      <app-loading-spinner message="Loading video details..."></app-loading-spinner>
+    </div>
+
+    <div *ngIf="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline ml-2">{{ errorMessage }}</span>
+    </div>
+
+    <ng-container *ngIf="!isLoading && !errorMessage && video">
+      <div class="mb-6">
+        <app-video-player [videoUrl]="video.playableVideoUrl ?? ''"></app-video-player>
+      </div>
+
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ video.videoName }}</h1>
+      <p class="text-gray-600 text-lg text-justify whitespace-pre-wrap mb-4">{{ video.videoDescription }}</p>
+
+      <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+        <!-- <span class="flex items-center">
+          <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+          {{ video.views | number }} views
+        </span> -->
+        <span class="flex items-center">
+          <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path></svg>
+          {{ formattedUploadDate }}
+        </span>
+        <!-- <span *ngIf="video.durationSeconds" class="flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd"></path></svg>
+            {{ formattedDuration }}
+        </span> -->
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 mb-4">
+        <div *ngIf="video.category" class="bg-blue-50 text-blue-800 text-sm px-4 py-2 rounded-full font-medium">
+          Category: {{ video.category.categoryName }}
+        </div>
+        <div *ngIf="video.videoTags && video.videoTags.length > 0" class="flex flex-wrap gap-2">
+          <span *ngFor="let tag of video.videoTags" class="bg-indigo-50 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">
+            {{ tag.tagName }}
+          </span>
+        </div>
+      </div>
+
+      <div class="border-t pt-4 text-sm text-gray-700">
+        Uploaded by User ID: <span class="font-semibold">{{ video.userId }}</span>
+      </div>
+    </ng-container>
+
+    <div class="mt-8 flex justify-center space-x-4">
+      <button
+        routerLink="/search"
+        class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition duration-200"
+      >
+        Back to Search
+      </button>
+
+      <button
+        *ngIf="isOwner"
+        [routerLink]="['/update-video', video?.videoId]"
+        class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
+      >
+        Edit Video
+      </button>
+
+      <button
+        *ngIf="isOwner"
+        (click)="onDeleteVideo()"
+        [disabled]="isDeleting"
+        class="px-6 py-3 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span *ngIf="!isDeleting">Delete Video</span>
+        <span *ngIf="isDeleting">Deleting...</span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@ import { VideoMetadataDto } from '../../../shared/models/video';
   providedIn: 'root'
 })
 export class VideoMetadataService {
-  private readonly baseUrl = '/video'; // Base URL for video metadata API
+  private readonly baseUrl = '/VideoMetadata'; // Base URL for video metadata API
 
   constructor(
     private apiService: ApiService,

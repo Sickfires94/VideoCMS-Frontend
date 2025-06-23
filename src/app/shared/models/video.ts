@@ -1,3 +1,4 @@
+import { User } from "../../features/auth/models/user.model";
 import { CategoryDto } from "./category";
 import { TagDto } from "./tag";
 
@@ -10,7 +11,9 @@ export interface VideoMetadataDto {
     category?: CategoryDto; // Renamed from 'categoryId' to match backend 'categoryId' type 'number'
     // category is a nested object, omit or define if full object needed
     userId: number; // Renamed from 'userId' to match backend 'userId' type 'number'
-    // user is a nested object, omit or define if full object needed
+    user?: User;
     videoUploadDate?: string; // Added, type 'string' (date), optional for new videos
     videoUpdatedDate?: string; // Added, type 'string' (date), optional for new videos
+  
+    playableVideoUrl? : string
   }

@@ -34,6 +34,7 @@ export class TokenStorageService {
    */
   public saveUser(user: User): void {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    console.log(JSON.stringify(user))  
   }
 
   /**
@@ -43,6 +44,7 @@ export class TokenStorageService {
   public getUser(): User | null {
     console.log("getting key")
     const userJson = localStorage.getItem(USER_KEY);
+    console.log(`UserId from Key: ${userJson}`)
     console.log("got Key")
     try {
       return userJson ? JSON.parse(userJson) : null;

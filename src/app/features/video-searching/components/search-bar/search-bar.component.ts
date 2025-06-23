@@ -1,96 +1,113 @@
 // src/app/features/video-searching/components/search-bar/search-bar.component.ts
-import { Component, EventEmitter, Output, OnInit, Input } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms'; // For reactive forms
-import { CommonModule } from '@angular/common'; // For ngIf
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { CategoryDto } from '../../../../shared/models/category';
-import { VideoSearchQuery } from '../../../../shared/models/VideoSearchQuery';
-import { CategoryService } from '../../../upload-video/services/category.service';
+import { Component, EventEmitter, Output, OnInit, Input, OnDestroy } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError, tap } from 'rxjs/operators'; // Added catchError, tap
+import { Subject, of, throwError } from 'rxjs'; // Added of, throwError for better error handling in switchMap
+
+import { VideoSearchingService } from '../../services/video-search.service';
 
 @Component({
   selector: 'app-search-bar',
-  standalone: true, // Mark as standalone
-  imports: [CommonModule, ReactiveFormsModule], // Import dependencies
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+  ],
   templateUrl: './search-bar.component.html',
-  styleUrls: ['./search-bar.component.scss'] // Optional
+  styleUrls: ['./search-bar.component.scss']
 })
-export class SearchBarComponent implements OnInit {
-  @Input() initialQuery: VideoSearchQuery = {}; // Optional: For pre-filling search
-  @Output() search = new EventEmitter<VideoSearchQuery>(); // Emits search criteria
+export class SearchBarComponent implements OnInit, OnDestroy {
+  @Input() initialSearchTerm: string = '';
+  @Output() searchSubmitted = new EventEmitter<string>();
 
-  searchTermControl = new FormControl('');
-  selectedCategoryControl = new FormControl(''); // Stores category ID or name
-  // You can add more controls for sortBy, sortDirection, tags here
+  searchFormControl = new FormControl<string>('', { nonNullable: true });
 
-  categories: CategoryDto[] = []; // For category dropdown
-  isSearchingCategories: boolean = false;
+  suggestedTerms: string[] = [];
+  isLoadingSuggestions: boolean = false;
+  showSuggestions: boolean = false;
 
-  constructor(private categoryService: CategoryService) { } // Reuse existing CategoryService
+  private destroy$ = new Subject<void>();
+
+  constructor(private videoSearchingService: VideoSearchingService) { }
 
   ngOnInit(): void {
-    // Initialize form controls with initial query
-    if (this.initialQuery.searchTerm) {
-      this.searchTermControl.setValue(this.initialQuery.searchTerm);
-    }
-    if (this.initialQuery.categoryId) {
-      this.selectedCategoryControl.setValue(this.initialQuery.categoryId);
-    }
+    this.searchFormControl.setValue(this.initialSearchTerm);
 
-    // Emit search query on search term changes (with debounce)
-    this.searchTermControl.valueChanges.pipe(
-      debounceTime(400),
-      distinctUntilChanged()
-    ).subscribe(value => {
-      this.emitSearch();
+    this.searchFormControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$),
+      switchMap(term => {
+        console.groupCollapsed('SearchBarComponent: Autocomplete Flow for term:', term); // Start group
+        console.log('  Triggering suggestion fetch...');
+        this.isLoadingSuggestions = true; // Start loading
+        this.showSuggestions = true;     // Show dropdown
+        console.log('  State after trigger: isLoadingSuggestions =', this.isLoadingSuggestions, ', showSuggestions =', this.showSuggestions);
+
+        if (term.length < 2) {
+          console.log('  Term too short, returning empty suggestions.');
+          this.suggestedTerms = []; // Clear previous suggestions
+          this.isLoadingSuggestions = false; // Turn off loading immediately
+          console.groupEnd(); // End group
+          return of([]); // Return an empty observable
+        }
+
+        return this.videoSearchingService.getSearchSuggestions(term).pipe(
+          tap(suggestions => {
+            console.log('  API call success, received suggestions:', suggestions);
+            // This tap is purely for logging; the subscribe block handles assignment
+          }),
+          catchError(error => {
+            console.error('  API call error during suggestions fetch:', error);
+            this.suggestedTerms = []; // Clear suggestions on error
+            this.isLoadingSuggestions = false; // Stop loading on error
+            this.showSuggestions = false; // Hide suggestions on error
+            console.groupEnd(); // End group
+            return of([]); // Return an empty observable to gracefully continue the stream
+          })
+        );
+      })
+      // Removed finalize here, as isLoadingSuggestions is managed in subscribe/catchError/term.length < 2
+    ).subscribe(suggestions => {
+      console.log('SearchBarComponent: Autocomplete suggestions received in subscribe:', suggestions);
+      this.suggestedTerms = suggestions;
+      this.isLoadingSuggestions = false; // --- FIX: Set isLoadingSuggestions to false AFTER data is available ---
+      console.log('  State after subscribe: isLoadingSuggestions =', this.isLoadingSuggestions, ', suggestedTerms.length =', this.suggestedTerms.length);
+      console.groupEnd(); // End group for this specific stream execution
     });
-
-    // Handle category selection changes
-    this.selectedCategoryControl.valueChanges.subscribe(value => {
-      this.emitSearch();
-    });
-
-    // Load categories for dropdown
-    this.loadCategories();
   }
 
-  loadCategories(): void {
-    this.isSearchingCategories = true;
-    this.categoryService.searchCategories('').subscribe({ // Empty query to get all or top categories
-      next: (categories) => {
-        this.categories = categories;
-        this.isSearchingCategories = false;
-      },
-      error: (err) => {
-        console.error('Failed to load categories for search bar:', err);
-        this.isSearchingCategories = false;
-        // Optionally show notification
-      }
-    });
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  emitSearch(): void {
-    const currentQuery: VideoSearchQuery = {
-      searchTerm: this.searchTermControl.value,
-      categoryId: this.selectedCategoryControl.value,
-      // Add other filter values here
-      // For simplicity, hardcoding sort for now, but these would be controls
-      sortBy: 'uploadDate',
-      sortDirection: 'desc',
-      pageNumber: 1, // Always reset to first page on new search criteria
-      pageSize: 10
-    };
-    this.search.emit(currentQuery);
+  onSearch(): void {
+    console.log('SearchBarComponent: onSearch() called (button click/suggestion select).');
+    this.showSuggestions = false;
+    this.searchSubmitted.emit(this.searchFormControl.value);
   }
 
-  // Clear search term
+  onSearchTermSelect(term: string): void {
+    console.log('SearchBarComponent: onSearchTermSelect() called with term:', term);
+    this.searchFormControl.setValue(term);
+    this.showSuggestions = false;
+    this.onSearch();
+  }
+
+  onSearchInputBlur(): void {
+    console.log('SearchBarComponent: onSearchInputBlur() called.');
+    // Delay hiding suggestions slightly to allow click on suggestion before blur hides it
+    setTimeout(() => {
+      this.showSuggestions = false;
+      console.log('SearchBarComponent: showSuggestions set to FALSE after blur timeout.');
+    }, 100);
+  }
+
   clearSearchTerm(): void {
-    this.searchTermControl.setValue('');
-    this.emitSearch(); // Trigger new search
-  }
-
-  // Clear category selection
-  clearCategorySelection(): void {
-    this.selectedCategoryControl.setValue('');
-    this.emitSearch(); // Trigger new search
+    console.log('SearchBarComponent: clearSearchTerm() called.');
+    this.searchFormControl.setValue('');
+    this.onSearch();
   }
 }

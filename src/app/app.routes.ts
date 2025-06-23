@@ -25,6 +25,14 @@ export const routes: Routes = [
     canActivate: [AuthGuard] // Protect the upload route
   },
   
+  {
+    path: 'video', // Parent path for video details
+    loadChildren: () => import('./features/video-details/video-detail.module').then(m => m.VideoDetailModule)
+  },
+  {
+    path: 'update-video', // Route for updating a video
+    loadChildren: () => import('./features/update-video/update-video.module').then(m => m.UpdateVideoModule)
+  },
 
   { path: '**', redirectTo: '/login' }
 ];

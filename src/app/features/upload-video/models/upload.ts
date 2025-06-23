@@ -1,6 +1,7 @@
 import { CategoryDto } from "../../../shared/models/category";
 
 export interface UploadVideoForm {
+  videoId? : number;
     videoFile: File | null;
     name: string;
     description: string;

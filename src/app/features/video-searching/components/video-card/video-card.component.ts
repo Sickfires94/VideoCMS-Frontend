@@ -1,28 +1,28 @@
 // src/app/features/video-searching/components/video-card/video-card.component.ts
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common'; // For ngIf
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { VideoMetadataSearchDto } from '../../models/videoMetadataSearchDto';
+import { HighlightPipe } from '../../../../shared/pipes/hightlight.pipe';
 
 @Component({
   selector: 'app-video-card',
-  standalone: true, // Mark as standalone
-  imports: [CommonModule], // Import CommonModule
+  standalone: true,
+  // --- NEW: Add HighlightPipe to imports ---
+  imports: [CommonModule, RouterModule, DatePipe, HighlightPipe],
   templateUrl: './video-card.component.html',
-  styleUrls: ['./video-card.component.scss'] // Optional, if you have specific styles not covered by Tailwind
+  styleUrls: ['./video-card.component.scss']
 })
-export class VideoCardComponent {
-  @Input() video!: VideoMetadataSearchDto; // Input property for video data
+export class VideoCardComponent implements OnInit {
+  @Input() video!: VideoMetadataSearchDto;
+  @Input() searchTerm: string = ''; // <--- NEW: Input for searchTerm
 
-  // Placeholder for missing thumbnails or dynamic generation if needed
-  get thumbnailUrl(): string {
-    // You can implement logic here to use a default image if video.thumbnailUrl is null/empty
-    // For now, assuming video.videoUrl can serve as a placeholder or a default is set.
-    return this.video.videoUrl || 'https://placehold.co/320x180/E0E0E0/757575?text=No+Thumbnail';
+  ngOnInit(): void {
+    // console.log('VideoCardComponent: Received video data for card:', this.video);
+    // console.log('VideoCardComponent: Card searchTerm:', this.searchTerm);
   }
 
-  // Example: Format a date (you might add a pipe for this)
-  get formattedUploadDate(): string {
-    // For now, using a placeholder or assuming it's part of videoUrl logic if not explicit.
-    return 'Uploaded: ' + new Date().toLocaleDateString(); // Replace with actual date logic
+  get thumbnailUrl(): string {
+    return this.video.videoUrl || 'https://placehold.co/320x180/E0E0E0/757575?text=No+Thumbnail';
   }
 }

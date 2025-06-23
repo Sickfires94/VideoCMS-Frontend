@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges, ViewChild, ElementRef } from '@angular/core'; // Import ViewChild, ElementRef
+import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -14,40 +14,76 @@ export class FileSelectorComponent implements OnChanges {
   @Input() fileUploadProgress: number | null = null;
   @Input() isUploading: boolean = false;
 
-  // Add ViewChild to get a reference to the hidden file input element
-  @ViewChild('fileInputRef') fileInputRef!: ElementRef<HTMLInputElement>; // Give your input a template reference variable
+  @ViewChild('fileInputRef') fileInputRef!: ElementRef<HTMLInputElement>;
 
   fileName: string = 'No file chosen';
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedFile'] && changes['selectedFile'].currentValue !== changes['selectedFile'].previousValue) {
       this.fileName = this.selectedFile ? this.selectedFile.name : 'No file chosen';
-      // Reset the input value when selectedFile changes to null
       if (!this.selectedFile && this.fileInputRef && this.fileInputRef.nativeElement) {
           this.fileInputRef.nativeElement.value = '';
       }
     }
   }
 
-  // This method will be called when the hidden file input's value changes
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      this.selectedFile = file; // Update component's internal state
-      this.fileName = file.name;
-      this.fileSelected.emit(file); // Emit the file to the parent component
+      const originalFile = input.files[0];
+
+      // --- NEW LOGIC: Comprehensive Filename Sanitization ---
+      let baseName = originalFile.name;
+      let extension = '';
+
+      // Separate filename from extension
+      const lastDotIndex = baseName.lastIndexOf('.');
+      if (lastDotIndex > 0) { // Ensure it's not a hidden file like .htaccess
+        extension = baseName.substring(lastDotIndex); // Includes the dot, e.g., ".mp4"
+        baseName = baseName.substring(0, lastDotIndex);
+      }
+
+      // 1. Replace all non-alphanumeric, non-underscore, non-hyphen, non-period characters with an underscore.
+      // This handles spaces, em-dashes, and other symbols.
+      // Regex: [^a-zA-Z0-9_.-]
+      // g: global (replace all occurrences)
+      // i: case-insensitive (not strictly needed with ^a-zA-Z0-9, but harmless)
+      let sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+
+      // 2. Replace multiple consecutive underscores/hyphens with a single underscore/hyphen.
+      // And replace combinations like '-_' or '_-'
+      sanitizedBaseName = sanitizedBaseName.replace(/[_]{2,}/g, '_'); // Replace __ with _
+      sanitizedBaseName = sanitizedBaseName.replace(/[-]{2,}/g, '-'); // Replace -- with -
+      sanitizedBaseName = sanitizedBaseName.replace(/[-_]+|-+/g, '_'); // Replace any combo of -_ with single _
+
+      // 3. Trim leading/trailing underscores or hyphens
+      sanitizedBaseName = sanitizedBaseName.replace(/^[_.-]+|[_.-]+$/g, '');
+
+      // Ensure base name is not empty after sanitization
+      if (sanitizedBaseName === '') {
+        sanitizedBaseName = 'untitled_file'; // Fallback name
+      }
+
+      const sanitizedFileName = sanitizedBaseName + extension;
+      // --- END NEW LOGIC ---
+
+      // Create a new File object with the sanitized name
+      const sanitizedFile = new File([originalFile], sanitizedFileName, {
+        type: originalFile.type,
+        lastModified: originalFile.lastModified
+      });
+
+      this.selectedFile = sanitizedFile;
+      this.fileName = sanitizedFile.name;
+      this.fileSelected.emit(sanitizedFile);
     } else {
-      // If the user cancels the file selection dialog without choosing a file
       this.selectedFile = null;
       this.fileName = 'No file chosen';
       this.fileSelected.emit(null);
     }
   }
 
-  // NEW: This method will be called when the "Browse" button is clicked
   openFileBrowser(): void {
-    // Programmatically click the hidden file input element
     this.fileInputRef.nativeElement.click();
   }
 
@@ -55,7 +91,6 @@ export class FileSelectorComponent implements OnChanges {
     this.selectedFile = null;
     this.fileName = 'No file chosen';
     this.fileSelected.emit(null);
-    // Directly reset the file input element's value
     if (this.fileInputRef && this.fileInputRef.nativeElement) {
       this.fileInputRef.nativeElement.value = '';
     }

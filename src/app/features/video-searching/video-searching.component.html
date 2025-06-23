@@ -1,14 +1,21 @@
 <!-- src/app/features/video-searching/video-searching.component.html -->
 <div class="container mx-auto p-6 bg-gray-100 min-h-screen font-sans">
-    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center bg-white p-4 sm:p-6 rounded-lg shadow-sm">
-      Video Search
-    </h1>
-  
-    <!-- Search Bar Component -->
-    <app-search-bar (search)="onSearch($event)"></app-search-bar>
-  
-    <!-- Video List Component -->
-    <app-video-list [videos]="videos" [isLoading]="isLoadingVideos"></app-video-list>
-  
-    <!-- TODO: Add pagination controls here based on PaginatedVideoResult -->
+  <div class="max-w-6xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-xl space-y-6">
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">Video Search</h1>
+
+    <!-- Ensure these bindings match the @Input and @Output names in SearchBarComponent -->
+    <app-search-bar
+      [initialSearchTerm]="currentSearchTerm"
+      (searchSubmitted)="onSearchSubmitted($event)"
+    ></app-search-bar>
+
+    <!-- Pass all necessary data to VideoListComponent -->
+    <app-video-list
+      [videos]="videos"
+      [isLoading]="isLoadingVideos"
+      [errorMessage]="errorMessage"
+      [searchTerm]="currentSearchTerm"
+    ></app-video-list>
+
   </div>
+</div>
