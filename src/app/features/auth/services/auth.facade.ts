@@ -47,9 +47,11 @@ export class AuthFacade {
   public login(payload: LoginPayload): Observable<AuthResponse> {
     return this.authApi.login(payload).pipe(
       tap((response: AuthResponse) => {
-        this.tokenStorage.saveToken(response.token);
-        this.tokenStorage.saveUser(response.user);
-        this.setAuthenticatedState(response.user);
+        console.log(`Response: ${response.user.token}`)
+        this.tokenStorage.saveToken(response.user.token);
+        const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
+        this.tokenStorage.saveUser(user);
+        this.setAuthenticatedState(user);
         this.notificationService.showSuccess('Login successful!'); // Success notification
         this.router.navigateByUrl('/'); // Or wherever your main app dashboard is
       }),
@@ -65,10 +67,12 @@ export class AuthFacade {
   public register(payload: RegisterPayload): Observable<AuthResponse> {
     return this.authApi.register(payload).pipe(
       tap((response: AuthResponse) => {
-        this.tokenStorage.saveToken(response.token);
-        this.tokenStorage.saveUser(response.user);
-        this.setAuthenticatedState(response.user);
-        this.notificationService.showSuccess('Registration successful!'); // Success notification
+        console.log(`Response: ${response.user.token}`)
+        this.tokenStorage.saveToken(response.user.token);
+        const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
+        this.tokenStorage.saveUser(user);
+        this.setAuthenticatedState(user);
+        this.notificationService.showSuccess('Login successful!'); // Success notification
         this.router.navigateByUrl('/upload');
       }),
       catchError(error => {

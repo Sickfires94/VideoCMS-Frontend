@@ -1,144 +1,334 @@
+// src/app/features/categories/components/category-selector/category-selector.component.ts
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, Input, Output, EventEmitter } from "@angular/core";
+import { Component, OnInit, Input, Output, EventEmitter, ElementRef, HostListener, OnDestroy } from "@angular/core";
 import { ReactiveFormsModule, FormControl } from "@angular/forms";
-import { debounceTime, distinctUntilChanged, tap, filter, switchMap, catchError, of, finalize } from "rxjs";
+import { debounceTime, distinctUntilChanged, tap, filter, switchMap, catchError, of, finalize, takeUntil } from "rxjs";
+import { Subject } from "rxjs";
 import { LoadingSpinnerComponent } from "../../../../shared/components/loading-spinner/loading-spinner.component";
 import { CategoryDto } from "../../../../shared/models/category";
 import { CategoryService } from "../../services/category.service";
 
 @Component({
   selector: 'app-category-selector',
-  standalone: true, // Mark as standalone
-  imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent], // Import necessary modules
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent],
   templateUrl: './category-selector.component.html',
   styleUrls: ['./category-selector.component.scss']
 })
-export class CategorySelectorComponent implements OnInit {
+export class CategorySelectorComponent implements OnInit, OnDestroy {
   @Input() selectedCategory: CategoryDto | null = null;
   @Output() categorySelected = new EventEmitter<CategoryDto | null>();
 
-  categorySearchControl = new FormControl('');
-  searchResults: CategoryDto[] = [];
-  isLoadingResults: boolean = false;
-  showCreateOption: boolean = false; // Control visibility of "Create New Category" option
+  mainCategorySearchControl = new FormControl<string>('');
+  mainSearchResults: CategoryDto[] = [];
+  isLoadingMainResults: boolean = false;
+  showCreateNewCategoryOption: boolean = false;
 
-  constructor(private categoryService: CategoryService) { } // Injects CategoryService (Model)
+  // Renamed to better reflect "related" instead of strictly "parent"
+  relatedCategorySearchControl = new FormControl<string>(''); 
+  relatedSearchResults: CategoryDto[] = [];
+  isLoadingRelatedResults: boolean = false;
+  selectedRelatedCategory: CategoryDto | null = null; // Renamed from selectedParentCategory
+
+  showMainSearchDropdown: boolean = false;
+  showRelatedSearchDropdown: boolean = false; // Renamed from showParentSearchDropdown
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private categoryService: CategoryService, private elementRef: ElementRef) { }
 
   ngOnInit(): void {
-    this.categorySearchControl.valueChanges.pipe(
-      debounceTime(300), // Wait for 300ms after the last keystroke
-      distinctUntilChanged(), // Only emit if value is different from previous value
+    // --------------------------------------------------------------------------------
+    // Logic for MAIN CATEGORY search/validation
+    // --------------------------------------------------------------------------------
+    this.mainCategorySearchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
       tap(() => {
-        this.isLoadingResults = true;
-        this.searchResults = []; // Clear previous results
-        this.showCreateOption = false; // Reset create option visibility
+        this.isLoadingMainResults = true;
+        this.mainSearchResults = [];
+        this.showCreateNewCategoryOption = false;
+        this.showMainSearchDropdown = true;
 
-        // If the user types after a category was selected, deselect it.
-        // This is crucial for allowing editing to remove the "selected" state.
-        if (this.selectedCategory && this.categorySearchControl.value?.trim().toLowerCase() !== this.selectedCategory.categoryName.toLowerCase()) {
+        if (this.selectedCategory && this.mainCategorySearchControl.value?.trim().toLowerCase() !== this.selectedCategory.categoryName.toLowerCase()) {
           this.selectedCategory = null;
           this.categorySelected.emit(null);
         }
 
-        if (!this.categorySearchControl.value) { // If search query is empty, clear results and stop loading
-          this.isLoadingResults = false;
+        if (!this.mainCategorySearchControl.value?.trim()) {
+          this.isLoadingMainResults = false;
+          this.showMainSearchDropdown = false;
         }
       }),
-      filter(query => (query && query.length > 2) || query === ''), // Only search if query is > 2 chars or empty to clear
+      filter(query => (query && query.length > 2) || query === ''),
       switchMap(query => {
         if (query) {
-          return this.categoryService.searchCategories(query).pipe( // Interacts with Model
+          return this.categoryService.searchCategories(query).pipe(
             catchError(error => {
-              console.error('Error in category search:', error);
-              return of([]); // Return an empty array on error
+              console.error('Error in main category search:', error);
+              return of([]);
             })
           );
         } else {
-          return of([]); // Return empty array if query is empty
+          return of([]);
         }
-      })
+      }),
+      takeUntil(this.destroy$)
     ).subscribe(results => {
-      this.searchResults = results;
-      this.isLoadingResults = false;
+      this.mainSearchResults = results;
+      this.isLoadingMainResults = false;
 
-      // Determine if "Create New Category" option should be shown
-      const currentQuery = this.categorySearchControl.value?.trim();
-      this.showCreateOption = !!(currentQuery && currentQuery.length > 0 && results.length === 0);
+      const currentQuery = this.mainCategorySearchControl.value?.trim();
+      this.showCreateNewCategoryOption = !!(currentQuery && currentQuery.length > 0 &&
+                                         !results.some(c => c.categoryName.toLowerCase() === currentQuery.toLowerCase()) &&
+                                         !this.selectedCategory);
+      this.showMainSearchDropdown = true;
     });
 
-    // If an initial selected category is provided, set the input value
+    // --------------------------------------------------------------------------------
+    // Logic for RELATED CATEGORY search/selection
+    // --------------------------------------------------------------------------------
+    this.relatedCategorySearchControl.valueChanges.pipe( // Renamed control
+      debounceTime(300),
+      distinctUntilChanged(),
+      tap(() => {
+        this.isLoadingRelatedResults = true; // Renamed loading flag
+        this.relatedSearchResults = []; // Renamed results array
+        this.showRelatedSearchDropdown = true; // Renamed dropdown flag
+
+        if (this.selectedRelatedCategory && this.relatedCategorySearchControl.value?.trim().toLowerCase() !== this.selectedRelatedCategory.categoryName.toLowerCase()) {
+          this.selectedRelatedCategory = null;
+        }
+
+        if (!this.relatedCategorySearchControl.value?.trim()) {
+          this.isLoadingRelatedResults = false;
+          this.showRelatedSearchDropdown = false;
+        }
+      }),
+      filter(query => (query && query.length > 2) || query === ''),
+      switchMap(query => {
+        if (query) {
+          return this.categoryService.searchCategories(query).pipe(
+            catchError(error => {
+              console.error('Error in related category search:', error);
+              return of([]);
+            })
+          );
+        } else {
+          return of([]);
+        }
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(results => {
+      this.relatedSearchResults = results; // Renamed results array
+      this.isLoadingRelatedResults = false;
+      this.showRelatedSearchDropdown = true; // Renamed dropdown flag
+    });
+
     if (this.selectedCategory) {
-      this.categorySearchControl.setValue(this.selectedCategory.categoryName, { emitEvent: false }); // Use categoryName
+      this.mainCategorySearchControl.setValue(this.selectedCategory.categoryName, { emitEvent: false });
+      if (this.selectedCategory.categoryParent?.categoryName) {
+        this.relatedCategorySearchControl.setValue(this.selectedCategory.categoryParent.categoryName, { emitEvent: false }); // Renamed control
+      }
     }
   }
 
-  /**
-   * Selects a category from the search results and emits it.
-   * Clears search results and sets the input value.
-   * @param category The selected CategoryDto.
-   */
-  selectCategory(category: CategoryDto): void {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: MouseEvent): void {
+    if (!this.elementRef.nativeElement.contains(event.target as Node)) {
+      this.showMainSearchDropdown = false;
+      this.showRelatedSearchDropdown = false; // Renamed
+      this.mainSearchResults = [];
+      this.relatedSearchResults = []; // Renamed
+      this.showCreateNewCategoryOption = false;
+      
+      const mainCategoryValue = this.mainCategorySearchControl.value?.trim().toLowerCase();
+      if (this.selectedCategory && mainCategoryValue !== this.selectedCategory.categoryName.toLowerCase()) {
+          this.selectedCategory = null;
+          this.categorySelected.emit(null);
+          if (!mainCategoryValue) {
+              this.mainCategorySearchControl.setValue('');
+          }
+      } else if (!this.selectedCategory && mainCategoryValue) {
+          if (!this.showCreateNewCategoryOption) {
+              this.mainCategorySearchControl.setValue('');
+          }
+      } else if (!this.selectedCategory && !mainCategoryValue) {
+          this.mainCategorySearchControl.setValue('');
+      }
+
+      const relatedCategoryValue = this.relatedCategorySearchControl.value?.trim().toLowerCase(); // Renamed
+      if (this.selectedRelatedCategory && relatedCategoryValue !== this.selectedRelatedCategory.categoryName.toLowerCase()) { // Renamed
+          this.selectedRelatedCategory = null; // Renamed
+          this.relatedCategorySearchControl.setValue(''); // Renamed
+      } else if (!this.selectedRelatedCategory && relatedCategoryValue) { // Renamed
+           this.relatedCategorySearchControl.setValue(''); // Renamed
+      } else if (!this.selectedRelatedCategory && !relatedCategoryValue) { // Renamed
+          this.relatedCategorySearchControl.setValue(''); // Renamed
+      }
+
+      console.log('CategorySelectorComponent: Closed by click outside.');
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // Main Category Input & Selection
+  // ----------------------------------------------------------------------
+
+  selectExistingCategory(category: CategoryDto, event: MouseEvent): void {
+    event.stopPropagation();
     this.selectedCategory = category;
-    this.categorySearchControl.setValue(category.categoryName, { emitEvent: false }); // Use categoryName
-    this.searchResults = []; // Clear search results after selection
-    this.showCreateOption = false; // Hide create option after selection
+    this.mainCategorySearchControl.setValue(category.categoryName, { emitEvent: false });
+    this.mainSearchResults = [];
+    this.showCreateNewCategoryOption = false;
+    this.showMainSearchDropdown = false;
     this.categorySelected.emit(category);
   }
 
-  /**
-   * Clears the selected category.
-   */
-  clearCategory(): void {
+  clearSelectedCategory(event: MouseEvent): void {
+    event.stopPropagation();
     this.selectedCategory = null;
-    this.categorySearchControl.setValue('');
-    this.searchResults = [];
-    this.showCreateOption = false; // Hide create option
+    this.mainCategorySearchControl.setValue('');
+    this.mainSearchResults = [];
+    this.showCreateNewCategoryOption = false;
+    this.showMainSearchDropdown = false;
     this.categorySelected.emit(null);
+    this.clearRelatedCategory(); // Renamed
   }
 
-  /**
-   * Handles input blur. If a category is selected but the input value changes,
-   * it effectively deselects the category.
-   */
-  onBlur(): void {
-    const currentValue = this.categorySearchControl.value?.trim().toLowerCase();
+  onMainCategoryBlur(): void {
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      const componentContainsActiveElement = this.elementRef.nativeElement.contains(activeElement);
 
-    // Check if a category is selected AND the current input value
-    // does NOT match the selected category's name.
-    if (this.selectedCategory && currentValue !== this.selectedCategory.categoryName.toLowerCase()) {
-      this.selectedCategory = null; // Deselect the category
-      this.categorySelected.emit(null); // Emit null to parent
+      if (!componentContainsActiveElement) {
+        this.showMainSearchDropdown = false;
+        this.mainSearchResults = [];
+        this.showCreateNewCategoryOption = false;
+
+        const currentValue = this.mainCategorySearchControl.value?.trim().toLowerCase();
+        if (this.selectedCategory && currentValue !== this.selectedCategory.categoryName.toLowerCase()) {
+          this.selectedCategory = null;
+          this.categorySelected.emit(null);
+        } else if (!this.selectedCategory && currentValue && !this.showCreateNewCategoryOption) {
+          this.mainCategorySearchControl.setValue('');
+        }
+      }
+    }, 150);
+  }
+
+  onMainCategoryFocus(): void {
+    const currentValue = this.mainCategorySearchControl.value?.trim();
+    if (currentValue && currentValue.length > 0 || this.selectedCategory) {
+      this.showMainSearchDropdown = true;
+      if (currentValue && currentValue.length > 2) {
+        this.mainCategorySearchControl.updateValueAndValidity({ emitEvent: true });
+      }
     }
+  }
 
-    // Always clear search results and hide create option on blur,
-    // unless a new search will be triggered by valueChanges.
-    // This is to clean up dropdowns after user interaction.
-    // The valueChanges pipe will re-populate if the query is valid.
-    setTimeout(() => { // Keep a small delay to allow click events on search results to fire before clearing
-        this.searchResults = [];
-        this.showCreateOption = false;
-    }, 100);
+  // ----------------------------------------------------------------------
+  // Related Category Input & Selection (formerly Parent)
+  // ----------------------------------------------------------------------
+
+  /**
+   * Selects a category for the "Related Category" field.
+   * @param category The selected CategoryDto to be a related category.
+   * @param event The mousedown event to stop propagation.
+   */
+  selectRelatedCategory(category: CategoryDto, event: MouseEvent): void { // Renamed method
+    event.stopPropagation();
+    this.selectedRelatedCategory = category; // Renamed property
+    this.relatedCategorySearchControl.setValue(category.categoryName, { emitEvent: false }); // Renamed control
+    this.relatedSearchResults = []; // Renamed results array
+    this.showRelatedSearchDropdown = false; // Renamed dropdown flag
   }
 
   /**
-   * Creates a new category using the current search input value.
+   * Clears the selected related category.
+   * @param event The click event to stop propagation.
    */
-  onCreateNewCategory(): void {
-    const newCategoryName = this.categorySearchControl.value?.trim();
+  clearRelatedCategory(event?: MouseEvent): void { // Renamed method
+    event?.stopPropagation();
+    this.selectedRelatedCategory = null; // Renamed property
+    this.relatedCategorySearchControl.setValue(''); // Renamed control
+    this.relatedSearchResults = []; // Renamed results array
+    this.showRelatedSearchDropdown = false; // Renamed dropdown flag
+  }
+
+  /**
+   * Handles blur for the "Related Category" input.
+   */
+  onRelatedCategoryBlur(): void { // Renamed method
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      const componentContainsActiveElement = this.elementRef.nativeElement.contains(activeElement);
+
+      if (!componentContainsActiveElement) {
+        this.showRelatedSearchDropdown = false; // Renamed
+        this.relatedSearchResults = []; // Renamed
+        const currentValue = this.relatedCategorySearchControl.value?.trim().toLowerCase(); // Renamed
+        if (this.selectedRelatedCategory && currentValue !== this.selectedRelatedCategory.categoryName.toLowerCase()) { // Renamed
+          this.selectedRelatedCategory = null; // Renamed
+        } else if (!this.selectedRelatedCategory && currentValue) { // Renamed
+          this.relatedCategorySearchControl.setValue(''); // Renamed
+        }
+      }
+    }, 150);
+  }
+
+  /**
+   * Handles focus for the related category input to show results
+   */
+  onRelatedCategoryFocus(): void { // Renamed method
+    const currentValue = this.relatedCategorySearchControl.value?.trim(); // Renamed
+    if (currentValue && currentValue.length > 0 || this.selectedRelatedCategory) { // Renamed
+      this.showRelatedSearchDropdown = true; // Renamed
+      if (currentValue && currentValue.length > 2) { // Renamed
+        this.relatedCategorySearchControl.updateValueAndValidity({ emitEvent: true }); // Renamed
+      }
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // Category Creation
+  // ----------------------------------------------------------------------
+
+  /**
+   * Creates a new category. Allows optional selection of a related category (parent).
+   * @param event The mouse event to stop propagation.
+   */
+  onCreateNewCategory(event: MouseEvent): void {
+    event.stopPropagation();
+    
+    const newCategoryName = this.mainCategorySearchControl.value?.trim();
     if (!newCategoryName) {
+      console.warn("New category name cannot be empty.");
+      // Add user-facing notification
       return;
     }
 
-    this.isLoadingResults = true; // Show loading while creating
-    this.categoryService.createCategory(newCategoryName).pipe(
-      finalize(() => this.isLoadingResults = false)
+    this.isLoadingMainResults = true;
+    // Pass categoryId of the selected related category, or null if none selected.
+    const parentCategoryId = this.selectedRelatedCategory ? this.selectedRelatedCategory.categoryId : null;
+
+    this.categoryService.createCategory(newCategoryName, parentCategoryId).pipe(
+      finalize(() => this.isLoadingMainResults = false),
+      takeUntil(this.destroy$)
     ).subscribe({
       next: (createdCategory: CategoryDto) => {
-        // Automatically select the newly created category
-        this.selectCategory(createdCategory);
+        console.log('Category created:', createdCategory);
+        this.selectExistingCategory(createdCategory, event); // Select the newly created one
+        this.clearRelatedCategory(); // Clear related category input after successful creation
       },
       error: (err: any) => {
         console.error('Failed to create category:', err);
+        // Add user-facing error notification here
       }
     });
   }

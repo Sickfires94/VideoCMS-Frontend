@@ -1,3 +1,4 @@
+// src/app/features/categories/services/category.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -10,7 +11,7 @@ import { CategoryDto } from '../../../shared/models/category';
   providedIn: 'root'
 })
 export class CategoryService {
-  private readonly baseUrl = '/Categories'; // Base URL for categories API (Note: OpenAPI uses capital C)
+  private readonly baseUrl = '/Categories';
 
   constructor(
     private apiService: ApiService,
@@ -18,20 +19,16 @@ export class CategoryService {
   ) { }
 
   /**
-   * Fetches all categories from the backend and filters them by name on the frontend.
-   * OpenAPI does not provide a direct search endpoint for categories.
+   * Fetches categories matching a query from the backend.
    * @param query The search query for categories.
    * @returns An Observable that emits an array of CategoryDto matching the query.
    */
   searchCategories(query: string): Observable<CategoryDto[]> {
     const normalizedQuery = query.toLowerCase().trim();
     if (!normalizedQuery) {
-      // If query is empty, return an empty array or all categories, depending on desired UX.
-      // For a search box, returning empty is common if no query is provided.
       return of([]);
     }
-    // Use the new backend search endpoint: /api/Categories/search/{categoryName}
-    const url = `${this.baseUrl}/search/${encodeURIComponent(normalizedQuery)}`; // Encode the query
+    const url = `${this.baseUrl}/search/${encodeURIComponent(normalizedQuery)}`;
     return this.apiService.get<CategoryDto[]>(url).pipe(
       catchError(error => {
         this.notificationService.showError('Failed to search categories.');
@@ -41,8 +38,18 @@ export class CategoryService {
     );
   }
 
-  createCategory(categoryName: string): Observable<CategoryDto> {
-    const payload = { categoryName: categoryName }; // Payload for POST /api/Categories
+  /**
+   * Creates a new category.
+   * @param categoryName The name of the new category.
+   * @param parentCategoryId Optional: The ID of the parent category.
+   * @returns An Observable that emits the newly created CategoryDto.
+   */
+  createCategory(categoryName: string, parentCategoryId: number | null = null): Observable<CategoryDto> { // FIX: Changed parentCategoryName to parentCategoryId
+    const payload: any = { categoryName: categoryName };
+    if (parentCategoryId !== null) { // Check for null, as 0 could be a valid ID
+      payload.categoryParentId = parentCategoryId; // FIX: Assign to categoryParentId
+    }
+
     return this.apiService.post<CategoryDto>(this.baseUrl, payload).pipe(
       catchError(error => {
         this.notificationService.showError('Failed to create new category.');

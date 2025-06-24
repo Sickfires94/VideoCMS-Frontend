@@ -6,6 +6,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { NotificationService } from '../services/notification.service';
 import { environment } from '../../../environments/environment';
+import { TokenStorageService } from '../services/token-storage.service'; // Import TokenStorageService
 
 // Define a simpler options interface, focusing on responseType for 'body' observation
 export interface ApiRequestOptions {
@@ -13,9 +14,6 @@ export interface ApiRequestOptions {
   params?: HttpParams | { [param: string]: string | string[]; };
   // Only include responseType here, observe is implicitly 'body' for these methods
   responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
-  // Do NOT include 'observe' directly if you only want 'body' responses by default.
-  // If you need 'observe: "events"' or 'observe: "response"', you'd use HttpClient directly
-  // or use the more complex ApiService pattern from the previous answer.
 }
 
 
@@ -27,12 +25,32 @@ export class ApiService {
 
   constructor(
     private http: HttpClient,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private tokenStorageService: TokenStorageService // Inject TokenStorageService
   ) { }
+
+  /**
+   * Adds the Authorization header with the Bearer token if available from TokenStorageService.
+   * @param existingHeaders Existing HttpHeaders or object of headers.
+   * @returns HttpHeaders with Authorization header added.
+   */
+  private addAuthHeader(existingHeaders?: HttpHeaders | { [header: string]: string | string[]; }): HttpHeaders {
+    let headers = existingHeaders instanceof HttpHeaders ? existingHeaders : new HttpHeaders(existingHeaders || {});
+    const token = this.tokenStorageService.getToken(); // <<< FIX: Get token from TokenStorageService
+
+    if (token && !headers.has('Authorization')) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+      // console.log('ApiService: Attaching Bearer token to request.'); // For debugging
+    } else if (!token) {
+      // console.warn('ApiService: No JWT token found via TokenStorageService for authenticated request.');
+    }
+    return headers;
+  }
 
   private formatErrors(error: any): Observable<never> {
     const errorMessage = error.error?.message || error.statusText || 'An unknown API error occurred.';
     console.error('API Call Error:', error);
+    this.notificationService.showError(errorMessage); // Display error to user
     return throwError(() => error);
   }
 
@@ -44,31 +62,15 @@ export class ApiService {
    */
   get<T>(
     path: string,
-    options?: ApiRequestOptions // Use the simplified options
+    options?: ApiRequestOptions
   ): Observable<T> {
     const httpOptions = {
-      headers: options?.headers instanceof HttpHeaders ? options.headers : new HttpHeaders(options?.headers || {}),
+      headers: this.addAuthHeader(options?.headers), // Automatically add Auth header
       params: options?.params instanceof HttpParams ? options.params : new HttpParams({ fromObject: (options?.params as any) || {} }),
-      responseType: options?.responseType, // Pass responseType directly
-      // observe is implicitly 'body' here
+      responseType: options?.responseType,
     };
-
-    // Need to cast to the specific response type for HttpClient.get overloads
-    // HttpClient.get<string>(..., {responseType: 'text'})
-    // HttpClient.get<any>(..., {responseType: 'json'}) (default)
-    if (options?.responseType === 'text') {
-      return this.http.get(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'text' }) as Observable<T>;
-    } else if (options?.responseType === 'blob') {
-        return this.http.get(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'blob' }) as Observable<T>;
-    } else if (options?.responseType === 'arraybuffer') {
-        return this.http.get(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'arraybuffer' }) as Observable<T>;
-    }
-    // Default to JSON parsing if responseType is 'json' or not specified
-    return this.http.get<T>(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'json' }).pipe(
-      catchError(this.formatErrors.bind(this))
-    );
+    return this.sendRequest<T>('GET', path, null, httpOptions);
   }
-
 
   /**
    * Performs a generic POST request to the API.
@@ -83,21 +85,11 @@ export class ApiService {
     options?: ApiRequestOptions
   ): Observable<T> {
     const httpOptions = {
-      headers: options?.headers instanceof HttpHeaders ? options.headers : new HttpHeaders(options?.headers || {}),
+      headers: this.addAuthHeader(options?.headers), // Automatically add Auth header
       params: options?.params instanceof HttpParams ? options.params : new HttpParams({ fromObject: (options?.params as any) || {} }),
       responseType: options?.responseType,
     };
-
-    if (options?.responseType === 'text') {
-      return this.http.post(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'text' }) as Observable<T>;
-    } else if (options?.responseType === 'blob') {
-        return this.http.post(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'blob' }) as Observable<T>;
-    } else if (options?.responseType === 'arraybuffer') {
-        return this.http.post(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'arraybuffer' }) as Observable<T>;
-    }
-    return this.http.post<T>(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'json' }).pipe(
-      catchError(this.formatErrors.bind(this))
-    );
+    return this.sendRequest<T>('POST', path, body, httpOptions);
   }
 
   /**
@@ -113,21 +105,11 @@ export class ApiService {
     options?: ApiRequestOptions
   ): Observable<T> {
     const httpOptions = {
-      headers: options?.headers instanceof HttpHeaders ? options.headers : new HttpHeaders(options?.headers || {}),
+      headers: this.addAuthHeader(options?.headers), // Automatically add Auth header
       params: options?.params instanceof HttpParams ? options.params : new HttpParams({ fromObject: (options?.params as any) || {} }),
       responseType: options?.responseType,
     };
-
-    if (options?.responseType === 'text') {
-      return this.http.put(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'text' }) as Observable<T>;
-    } else if (options?.responseType === 'blob') {
-        return this.http.put(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'blob' }) as Observable<T>;
-    } else if (options?.responseType === 'arraybuffer') {
-        return this.http.put(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'arraybuffer' }) as Observable<T>;
-    }
-    return this.http.put<T>(`${this.baseApiUrl}${path}`, body, { ...httpOptions, responseType: 'json' }).pipe(
-      catchError(this.formatErrors.bind(this))
-    );
+    return this.sendRequest<T>('PUT', path, body, httpOptions);
   }
 
   /**
@@ -141,20 +123,45 @@ export class ApiService {
     options?: ApiRequestOptions
   ): Observable<T> {
     const httpOptions = {
-      headers: options?.headers instanceof HttpHeaders ? options.headers : new HttpHeaders(options?.headers || {}),
+      headers: this.addAuthHeader(options?.headers), // Automatically add Auth header
       params: options?.params instanceof HttpParams ? options.params : new HttpParams({ fromObject: (options?.params as any) || {} }),
       responseType: options?.responseType,
     };
+    return this.sendRequest<T>('DELETE', path, null, httpOptions);
+  }
 
-    if (options?.responseType === 'text') {
-      return this.http.delete(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'text' }) as Observable<T>;
-    } else if (options?.responseType === 'blob') {
-        return this.http.delete(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'blob' }) as Observable<T>;
-    } else if (options?.responseType === 'arraybuffer') {
-        return this.http.delete(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'arraybuffer' }) as Observable<T>;
+  /**
+   * Internal helper to send the HTTP request with proper type casting.
+   */
+  private sendRequest<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body: Object | null,
+    httpOptions: any // Using 'any' due to HttpClient overloads based on responseType
+  ): Observable<T> {
+    const url = `${this.baseApiUrl}${path}`;
+
+    let requestObservable: Observable<any>; // Use any here for the intermediate type
+
+    switch (method) {
+      case 'GET':
+        requestObservable = this.http.get(url, httpOptions);
+        break;
+      case 'POST':
+        requestObservable = this.http.post(url, body, httpOptions);
+        break;
+      case 'PUT':
+        requestObservable = this.http.put(url, body, httpOptions);
+        break;
+      case 'DELETE':
+        requestObservable = this.http.delete(url, httpOptions);
+        break;
+      default:
+        return throwError(() => new Error('Unsupported HTTP method.'));
     }
-    return this.http.delete<T>(`${this.baseApiUrl}${path}`, { ...httpOptions, responseType: 'json' }).pipe(
+
+    return requestObservable.pipe(
       catchError(this.formatErrors.bind(this))
-    );
+    ) as Observable<T>;
   }
 }

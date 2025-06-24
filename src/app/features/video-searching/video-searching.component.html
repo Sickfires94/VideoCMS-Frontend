@@ -3,13 +3,11 @@
   <div class="max-w-6xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-xl space-y-6">
     <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center">Video Search</h1>
 
-    <!-- Ensure these bindings match the @Input and @Output names in SearchBarComponent -->
     <app-search-bar
       [initialSearchTerm]="currentSearchTerm"
       (searchSubmitted)="onSearchSubmitted($event)"
     ></app-search-bar>
 
-    <!-- Pass all necessary data to VideoListComponent -->
     <app-video-list
       [videos]="videos"
       [isLoading]="isLoadingVideos"

@@ -5,14 +5,12 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
 
-import { VideoMetadataSearchDto } from './models/videoMetadataSearchDto'; // Your search-specific DTO
+import { PaginatedVideoResult } from '../../shared/models/PaginatedVideoResult';
+import { VideoMetadataSearchDto } from './models/videoMetadataSearchDto'; // Assuming this is your DTO for displayed video cards
 
-
-// --- CRITICAL: Ensure SearchBarComponent and VideoListComponent are correctly imported ---
+import { VideoSearchingService } from './services/video-search.service'; // Changed from video-searching.service to video-search.service
 import { SearchBarComponent } from './components/search-bar/search-bar.component';
 import { VideoListComponent } from './components/video-list/video-list.component';
-import { PaginatedVideoResult } from '../../shared/models/PaginatedVideoResult';
-import { VideoSearchingService } from './services/video-search.service';
 
 @Component({
   selector: 'app-video-searching',
@@ -20,9 +18,8 @@ import { VideoSearchingService } from './services/video-search.service';
   imports: [
     CommonModule,
     RouterModule,
-    // --- CRITICAL: List standalone components used in this template here ---
-    SearchBarComponent, // This MUST be here for app-search-bar to be recognized
-    VideoListComponent  // This MUST be here for app-video-list to be recognized
+    SearchBarComponent,
+    VideoListComponent
   ],
   templateUrl: './video-searching.component.html',
   styleUrls: ['./video-searching.component.scss']
@@ -31,7 +28,8 @@ export class VideoSearchingComponent implements OnInit, OnDestroy {
   videos: VideoMetadataSearchDto[] = [];
   isLoadingVideos: boolean = false;
   errorMessage: string | null = null;
-  currentSearchTerm: string = ''; // State to hold the current search term
+  currentSearchTerm: string = '';
+  selectedCategoryName: string | undefined; // --- NEW: Track selected category name ---
 
   private destroy$ = new Subject<void>();
 
@@ -42,17 +40,20 @@ export class VideoSearchingComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to query parameters to handle initial load or URL changes
     this.route.queryParams.pipe(
       takeUntil(this.destroy$)
     ).subscribe(params => {
       const currentSearchTermFromUrl = params['searchTerm'] || '';
+      const selectedCategoryNameFromUrl = params['categoryName'] || undefined; // --- NEW: Get category from URL ---
 
-      // Only update and re-search if the search term from URL has actually changed
-      // or if it's an initial load and no videos are present.
-      if (this.currentSearchTerm !== currentSearchTermFromUrl || (this.videos.length === 0 && !this.isLoadingVideos && !this.errorMessage)) {
-        this.currentSearchTerm = currentSearchTermFromUrl; // Update component's internal state
-        this.performSearch(this.currentSearchTerm);
+      // Decide if a new search is needed based on changes in term or category
+      if (this.currentSearchTerm !== currentSearchTermFromUrl || this.selectedCategoryName !== selectedCategoryNameFromUrl) {
+          this.currentSearchTerm = currentSearchTermFromUrl;
+          this.selectedCategoryName = selectedCategoryNameFromUrl;
+          this.performSearch(this.currentSearchTerm, this.selectedCategoryName);
+      } else if (this.videos.length === 0 && !this.isLoadingVideos && !this.errorMessage && currentSearchTermFromUrl === '' && selectedCategoryNameFromUrl === undefined) {
+          // Initial load with no params and no videos loaded yet
+          this.performSearch('', undefined);
       }
     });
   }
@@ -62,40 +63,34 @@ export class VideoSearchingComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * Handles the search submission event emitted by the SearchBarComponent.
-   * This method receives the search term as a string.
-   * @param searchTerm The search term from the SearchBar.
-   */
-  onSearchSubmitted(searchTerm: string): void {
-    // Only update the URL if the new search term is different from the current one
-    // This prevents unnecessary URL updates and re-triggers of the queryParams subscription
-    if (this.currentSearchTerm !== searchTerm) {
-      this.updateUrl(searchTerm); // Updating URL will trigger queryParams subscription, which calls performSearch
+  // --- FIX: Updated signature to accept object from search bar ---
+  onSearchSubmitted(searchData: { term: string, categoryName?: string }): void {
+    const newSearchTerm = searchData.term;
+    const newCategoryName = searchData.categoryName;
+
+    if (this.currentSearchTerm !== newSearchTerm || this.selectedCategoryName !== newCategoryName) {
+      this.updateUrl(newSearchTerm, newCategoryName);
     } else {
-      // If the search term is the same, directly re-run the search
-      // (e.g., user hits Enter again on the same term, or selects it from suggestions)
-      this.performSearch(searchTerm);
+      // If term and category are the same, just re-run the search
+      this.performSearch(newSearchTerm, newCategoryName);
     }
   }
 
-  /**
-   * Executes the video search API call.
-   * @param searchTerm The term to use for searching videos.
-   */
-  performSearch(searchTerm: string): void {
+  // --- FIX: Updated performSearch signature ---
+  performSearch(searchTerm: string, categoryName?: string): void {
     this.isLoadingVideos = true;
     this.errorMessage = null;
-    this.videos = []; // Clear previous results immediately
+    this.videos = [];
 
-    this.videoSearchingService.searchVideos(searchTerm).pipe(
+    // --- FIX: Pass categoryName to service ---
+    this.videoSearchingService.searchVideos(searchTerm, categoryName).pipe(
       finalize(() => {
-        this.isLoadingVideos = false; // Always set loading to false when observable completes
+        this.isLoadingVideos = false;
       }),
-      takeUntil(this.destroy$) // Ensure subscription is cleaned up
+      takeUntil(this.destroy$)
     ).subscribe({
       next: (result: PaginatedVideoResult) => {
-        this.videos = result.items; // Assign the array of video objects
+        this.videos = result.items;
       },
       error: (err: any) => {
         this.errorMessage = err.message || 'An unexpected error occurred while fetching videos.';
@@ -103,23 +98,19 @@ export class VideoSearchingComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Updates the browser's URL with the current search term as a query parameter.
-   * @param searchTerm The search term to reflect in the URL.
-   */
-  updateUrl(searchTerm: string): void {
+  // --- FIX: Updated updateUrl signature ---
+  updateUrl(searchTerm: string, categoryName?: string): void {
     const queryParams: any = {
-      // Use null for an empty string to remove the query parameter from the URL
       searchTerm: searchTerm || null,
+      categoryName: categoryName || null, // --- NEW: Add categoryName to URL ---
     };
 
-    // Remove any parameters that are null (e.g., if searchTerm is empty)
     Object.keys(queryParams).forEach(key => queryParams[key] === null && delete queryParams[key]);
 
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: queryParams,
-      queryParamsHandling: 'merge' // Merge with any other existing query parameters
+      queryParamsHandling: 'merge'
     });
   }
 }

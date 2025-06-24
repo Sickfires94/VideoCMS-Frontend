@@ -1,27 +1,27 @@
-<!-- VIEW: Renders category search and selection UI. Binds to ViewModel properties and commands. -->
+<!-- src/app/features/categories/components/category-selector/category-selector.component.html -->
 <div class="p-4 bg-white rounded-lg shadow-md mb-4">
-  <label for="categorySearch" class="block text-lg font-semibold text-gray-700 mb-2">Select Category</label>
-
-  <div class="relative">
+  <!-- Main Category Selector Input -->
+  <label for="mainCategorySearch" class="block text-lg font-semibold text-gray-700 mb-2">
+    Category for this video:
+  </label>
+  <div class="relative mb-4">
     <input
-      id="categorySearch"
+      id="mainCategorySearch"
       type="text"
-      [formControl]="categorySearchControl"
-      placeholder="Search for a category..."
-      (focus)="onBlur()"
-      (blur)="onBlur()"
+      [formControl]="mainCategorySearchControl"
+      placeholder="Search or enter a new category name..."
+      (focus)="onMainCategoryFocus()"
+      (blur)="onMainCategoryBlur()"
       [ngClass]="{
         'border-green-500 bg-green-50 text-green-800 font-semibold': selectedCategory,
         'border-gray-300': !selectedCategory
       }"
       class="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-    /> <!-- FIX: Properly self-closed the input tag here -->
-    <!-- REMOVED: [readonly]="!!selectedCategory" to allow editing -->
-    <!-- Add a clear button directly in the input if a category is selected -->
+    />
     <button
       *ngIf="selectedCategory"
       type="button"
-      (click)="clearCategory()"
+      (click)="clearSelectedCategory($event)"
       class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
       title="Clear selected category"
     >
@@ -30,32 +30,84 @@
       </svg>
     </button>
 
-
-    <div *ngIf="isLoadingResults" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+    <div *ngIf="isLoadingMainResults" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
       <app-loading-spinner size="small"></app-loading-spinner>
     </div>
 
-    <ul *ngIf="searchResults.length > 0 && categorySearchControl.value && !selectedCategory"
+    <!-- Results for selecting an existing category -->
+    <ul *ngIf="showMainSearchDropdown && mainSearchResults.length > 0 && mainCategorySearchControl.value && !selectedCategory"
         class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
-      <li *ngFor="let category of searchResults"
-          (mousedown)="selectCategory(category)" class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-gray-800 rounded-md transition duration-150 ease-in-out">
-        {{ category.categoryName }} <!-- Use categoryName -->
+      <li *ngFor="let category of mainSearchResults"
+          (mousedown)="selectExistingCategory(category, $event)"
+          class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-gray-800 rounded-md transition duration-150 ease-in-out">
+        {{ category.categoryName }}
       </li>
     </ul>
 
-    <!-- NEW: Option to create new category -->
-    <div *ngIf="showCreateOption" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1">
+    <!-- Option to create new category - only shown if search doesn't match existing and no category is currently selected -->
+    <div *ngIf="showCreateNewCategoryOption" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 p-2">
+      <p class="text-sm text-gray-700 mb-2">
+        You're about to create a new category: "<span class="font-semibold text-blue-700">{{ mainCategorySearchControl.value }}</span>".
+        This will be a **top-level category** unless you select a related category below.
+      </p>
+
+      <!-- Related Category Section - Now always visible when in "create new category" mode -->
+      <label for="relatedCategorySearch" class="block text-md font-semibold text-gray-700 mb-1">
+        Related Category (Optional):
+      </label>
+      <div class="relative mb-2">
+        <input
+          id="relatedCategorySearch"
+          type="text"
+          [formControl]="relatedCategorySearchControl"
+          placeholder="Search for a related category..."
+          (focus)="onRelatedCategoryFocus()"
+          (blur)="onRelatedCategoryBlur()"
+          (mousedown)="$event.stopPropagation()"
+          [ngClass]="{
+            'border-green-500 bg-green-50 text-green-800 font-semibold': selectedRelatedCategory,
+            'border-gray-300': !selectedRelatedCategory
+          }"
+          class="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+        />
+        <button
+          *ngIf="selectedRelatedCategory"
+          type="button"
+          (click)="clearRelatedCategory($event)"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+          title="Clear selected related category"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+
+        <div *ngIf="isLoadingRelatedResults" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+          <app-loading-spinner size="small"></app-loading-spinner>
+        </div>
+
+        <!-- Search Results for Related Category -->
+        <ul *ngIf="showRelatedSearchDropdown && relatedSearchResults.length > 0 && relatedCategorySearchControl.value && !selectedRelatedCategory"
+            class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+          <li *ngFor="let category of relatedSearchResults"
+              (mousedown)="selectRelatedCategory(category, $event)"
+              class="px-3 py-2 cursor-pointer hover:bg-gray-100 text-gray-800 rounded-md transition duration-150 ease-in-out">
+            {{ category.categoryName }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Create Button for New Category -->
       <button
         type="button"
-        (click)="onCreateNewCategory()"
-        class="w-full px-3 py-2 text-left text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out rounded-md"
+        (click)="onCreateNewCategory($event)"
+        [disabled]="!mainCategorySearchControl.value?.trim()"
+        class="w-full px-3 py-2 text-center bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Create new category: "<span class="font-semibold">{{ categorySearchControl.value }}</span>"
+        Create "{{ mainCategorySearchControl.value }}"
+        <span *ngIf="selectedRelatedCategory"> as a child of "{{ selectedRelatedCategory.categoryName }}"</span>
+        <span *ngIf="!selectedRelatedCategory"> as a top-level category</span>
       </button>
     </div>
-
-    <!-- REMOVED: "No categories found" message -->
   </div>
-
-  <!-- REMOVED: This block previously displayed the selected category below the input field -->
 </div>

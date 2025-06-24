@@ -17,6 +17,7 @@ export class TokenStorageService {
    * @param token The JWT token to store.
    */
   public saveToken(token: string): void {
+    console.log(`Token being saved: ${token}`)
     localStorage.setItem(TOKEN_KEY, token);
   }
 
@@ -25,7 +26,9 @@ export class TokenStorageService {
    * @returns The stored token or null if not found.
    */
   public getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY)
+    console.log(`Token being retrieved: ${token}`)
+    return token;
   }
 
   /**

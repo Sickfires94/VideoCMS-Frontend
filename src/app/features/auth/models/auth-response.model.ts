@@ -1,7 +1,9 @@
 import { User } from "./user.model";
 
 export interface AuthResponse {
-    token: string;
-    user: User;
-    expiresIn?: number; // Optional: if using JWT expiration
-  }
+  user: {
+    userId: number,
+    userName: string,
+    userEmail: string,
+    token: string
+  }}
