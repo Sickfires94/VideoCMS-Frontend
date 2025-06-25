@@ -8,6 +8,7 @@ import { AppNotification } from '../../shared/models/appNotification';
 export class NotificationService {
   private notificationSubject = new Subject<AppNotification | null>();
   private nextId = 0; // Simple ID generator
+  private DEFAULT_DURATION = 5000
 
   constructor() { }
 
@@ -52,7 +53,7 @@ export class NotificationService {
    * @param duration Optional duration in milliseconds.
    */
   showWarning(message: string, duration?: number): void {
-    this.showNotification('warning', message, duration);
+    this.showNotification('warning', message, duration ?? 5);
   }
 
   /**
@@ -62,6 +63,7 @@ export class NotificationService {
    * @param duration Optional duration for automatic dismissal.
    */
   private showNotification(type: AppNotification['type'], message: string, duration?: number): void {
+    if (!duration) duration = this.DEFAULT_DURATION;
     const notification: AppNotification = {
       id: String(this.nextId++), // Assign a unique ID
       type,

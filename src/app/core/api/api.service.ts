@@ -50,7 +50,7 @@ export class ApiService {
   private formatErrors(error: any): Observable<never> {
     const errorMessage = error.error?.message || error.statusText || 'An unknown API error occurred.';
     console.error('API Call Error:', error);
-    this.notificationService.showError(errorMessage); // Display error to user
+    // this.notificationService.showError(errorMessage); // Display error to user
     return throwError(() => error);
   }
 

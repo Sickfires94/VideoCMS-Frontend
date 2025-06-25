@@ -4,6 +4,7 @@ import { catchError, map } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { VideoMetadataDto } from '../../../shared/models/video';
+import { VideoMetadataChangeLog } from '../../../shared/models/video-metadata-changelog';
 
 
 @Injectable({
@@ -11,6 +12,7 @@ import { VideoMetadataDto } from '../../../shared/models/video';
 })
 export class VideoMetadataService {
   private readonly baseUrl = '/VideoMetadata'; // Base URL for video metadata API
+  private readonly changeLogsUrl = '/VideoMetadata_changeLog'
 
   constructor(
     private apiService: ApiService,
@@ -47,5 +49,15 @@ export class VideoMetadataService {
         return throwError(() => new Error('Video metadata submission failed.'));
       })
     );
+  }
+
+  /**
+   * Fetches the change logs for a specific video.
+   * This endpoint is protected on the backend for video owners only.
+   * @param videoId The ID of the video for which to get changelogs.
+   * @returns An Observable of an array of VideoMetadataChangeLog.
+   */
+  getVideoChangelogs(videoId: number): Observable<VideoMetadataChangeLog[]> {
+    return this.apiService.get<VideoMetadataChangeLog[]>(`${this.changeLogsUrl}/${videoId}`);
   }
 }

@@ -5,11 +5,11 @@
     <app-loading-spinner message="Loading videos..."></app-loading-spinner>
   </div>
 
-  <!-- Error Message -->
+  <!-- Error Message
   <div *ngIf="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
     <strong class="font-bold">Error!</strong>
     <span class="block sm:inline ml-2">{{ errorMessage }}</span>
-  </div>
+  </div> -->
 
   <!-- Video Results Grid -->
   <div *ngIf="!isLoading && !errorMessage && videos.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">

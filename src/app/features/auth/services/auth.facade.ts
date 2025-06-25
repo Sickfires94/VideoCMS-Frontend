@@ -53,7 +53,7 @@ export class AuthFacade {
         this.tokenStorage.saveUser(user);
         this.setAuthenticatedState(user);
         this.notificationService.showSuccess('Login successful!'); // Success notification
-        this.router.navigateByUrl('/'); // Or wherever your main app dashboard is
+        this.router.navigateByUrl('/search'); // Or wherever your main app dashboard is
       }),
       catchError(error => {
         console.error('AuthFacade: Login error', error);

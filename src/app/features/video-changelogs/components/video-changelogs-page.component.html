@@ -1,0 +1,32 @@
+<!-- src/app/features/video-changelogs/components/video-changelogs-page.component.html -->
+<div class="changelogs-container p-4 md:p-8 bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 md:p-8">
+      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+        <h1 class="text-3xl font-bold text-gray-900">Video Changelogs (ID: {{ videoId }})</h1>
+        <button
+          (click)="goBackToVideoDetail()"
+          class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 ease-in-out"
+        >
+          &larr; Back to Video Detail
+        </button>
+      </div>
+  
+      <div *ngIf="isLoading" class="text-center py-8">
+        <p class="text-gray-600 text-lg">Loading changelogs...</p>
+        <!-- Optional: Add a loading spinner here -->
+      </div>
+  
+      <div *ngIf="errorMessage" class="text-center py-8 text-red-600 font-semibold text-lg">
+        <p>{{ errorMessage }}</p>
+      </div>
+  
+      <div *ngIf="!isLoading && !errorMessage && changelogs.length === 0" class="text-center py-8 text-gray-600 text-lg">
+        <p>No changelogs found for this video.</p>
+      </div>
+  
+      <!-- Iterate and display LogCardComponent for each changelog -->
+      <div *ngIf="changelogs.length > 0" class="changelogs-list space-y-6">
+        <app-log-card *ngFor="let log of changelogs" [log]="log"></app-log-card>
+      </div>
+    </div>
+  </div>

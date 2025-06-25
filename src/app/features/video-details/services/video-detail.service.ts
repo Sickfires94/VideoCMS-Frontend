@@ -72,6 +72,8 @@ export class VideoDetailService {
     );
   }
 
+  
+
   private getPlayableVideoUrl(fullBlobUrl: string): Observable<string> {
     const url = `${this.sasGenerationBaseUrl}/generate-download-sas`; // Your backend endpoint
     

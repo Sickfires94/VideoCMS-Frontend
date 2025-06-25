@@ -48,6 +48,7 @@ export class UpdateVideoComponent implements OnInit {
   isLoadingSuggestedTags: boolean = false;
   isUpdatingVideo: boolean = false;
   isLoadingVideo: boolean = true;
+  InitialTags: string[] = []
 
   constructor(
     private route: ActivatedRoute,
@@ -107,6 +108,7 @@ export class UpdateVideoComponent implements OnInit {
           selectedCategory: videoData.category || null,
           selectedTags: videoData.videoTags?.map(tag => tag.tagName) || []
         });
+        this.InitialTags = videoData.videoTags?.map(tag => tag.tagName) || []
         this.generateSuggestedTags();
       },
       error: (err) => {
@@ -158,6 +160,12 @@ export class UpdateVideoComponent implements OnInit {
     }
 
     this.isUpdatingVideo = true;
+
+    this.updateVideoForm.controls.selectedTags.setValue(
+      this.updateVideoForm.controls.selectedTags.value.filter(
+        item => !this.InitialTags.includes(item) // <-- FIX IS HERE
+      )
+    );
 
     // Construct the payload for the backend.
     // Copy original metadata and apply form updates.

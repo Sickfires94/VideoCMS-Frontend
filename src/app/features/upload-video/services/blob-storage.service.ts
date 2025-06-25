@@ -1,83 +1,119 @@
-// src/app/services/blob-storage.service.ts
+// src/app/features/upload-video/services/blob-storage.service.ts
 import { Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, from, Subject } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
-import { HttpClient, HttpEventType, HttpEvent, HttpParams, HttpHeaders } from '@angular/common/http';
-import { ApiService } from '../../../core/api/api.service'; // Ensure this import is correct
+import { HttpClient, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http'; // Added HttpParams here if you use it for download
+import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
+
+// Corrected import for TransferProgressEvent
+import { BlobServiceClient, AnonymousCredential, BlobHTTPHeaders, BlockBlobClient } from '@azure/storage-blob';
+import { TransferProgressEvent } from '@azure/core-rest-pipeline'; // <--- CORRECTED IMPORT PATH
+import { dateTimestampProvider } from 'rxjs/internal/scheduler/dateTimestampProvider';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BlobStorageService {
-  private readonly BlobBaseUrl = '/video/Blob'; // Relative path for ApiService
+  private readonly BlobBaseUrl = '/video/Blob';
+  private readonly defaultBlobBlockSize = 4 * 1024 * 1024; // 4 MB
+
+  private _uploadProgressSubject = new Subject<HttpEvent<any>>();
+  public readonly uploadProgress$ = this._uploadProgressSubject.asObservable();
 
   constructor(
     private apiService: ApiService,
     private notificationService: NotificationService,
-    private http: HttpClient // Still needed for direct PUT to Azure Blob Storage
+    private http: HttpClient
   ) { }
 
-  uploadFileWithSas(file: File): Observable<HttpEvent<any>> {
-    const fileName = file.name;
-    console.log("Getting SAS Token: Initiating request for file:", fileName);
+  /**
+   * Uploads a file to Azure Blob Storage using the Azure SDK.
+   * Progress is emitted via the `uploadProgress$` observable.
+   */
+  uploadFileWithSas(file: File, containerName: string, prefix: string): Observable<string> {
+    const sanitizedPrefix = prefix.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const fileName = sanitizedPrefix + "-" + dateTimestampProvider.now() + "-" + file.name;
+    console.log("BlobStorageService: Initiating SAS token request for file:", fileName);
 
-    let params = new HttpParams().set("filename", fileName);
+    this._uploadProgressSubject.next({ type: HttpEventType.Sent } as HttpEvent<any>);
 
-    // Call ApiService to get the SAS URI (passing responseType: 'text')
-    // This call will now correctly use the simplified ApiService
+    // 1. Get SAS URI from backend
     return this.apiService.get<string>(`${this.BlobBaseUrl}/generate-upload-sas`, {
-      params: params,
-      responseType: 'text' // This is the crucial part for ApiService
+      params: { filename: fileName, containerName: containerName },
+      responseType: 'text'
     }).pipe(
       tap(sasUriFromBackend => {
-        console.log('TAP: Received raw SAS URI from backend (before switchMap):', sasUriFromBackend);
         if (!sasUriFromBackend || typeof sasUriFromBackend !== 'string' || sasUriFromBackend.trim() === '') {
-          console.error('TAP: SAS URI received from backend is empty or not a string!', sasUriFromBackend);
           throw new Error('Invalid SAS URI received from backend.');
         }
+        console.log('BlobStorageService: Received SAS URI from backend.');
       }),
       switchMap((sasUri: string) => {
-        console.log('SWITCHMAP: Inside switchMap. SAS URI for upload:', sasUri);
-        if (!sasUri || typeof sasUri !== 'string' || sasUri.trim() === '') {
-            console.error('SWITCHMAP: SAS URI is invalid or empty, cannot proceed with upload!', sasUri);
-            return throwError(() => new Error('Invalid SAS URI received from backend.'));
-        }
+        const blockBlobClient = new BlockBlobClient(sasUri);
 
-        const headers = new HttpHeaders({
-          'x-ms-blob-type': 'BlockBlob',
-          'Content-Type': file.type
-        });
+        const blobHttpHeaders: BlobHTTPHeaders = {
+          blobContentType: file.type
+        };
 
-        // This PUT request directly to Azure Blob Storage still needs 'observe: "events"'
-        // so it uses this.http (the direct HttpClient instance), not apiService.
-        return this.http.put(sasUri, file, {
-          headers: headers,
-          reportProgress: true,
-          observe: 'events' // Explicitly asking for events for progress updates
-        });
+        // 3. Use the SDK's uploadBrowserData method for chunked upload
+        return from(
+          blockBlobClient.uploadBrowserData(file, {
+            blockSize: this.defaultBlobBlockSize,
+            maxSingleShotSize: this.defaultBlobBlockSize,
+            blobHTTPHeaders: blobHttpHeaders,
+            onProgress: (progress: TransferProgressEvent) => { // Type 'progress' correctly
+              this._uploadProgressSubject.next({
+                type: HttpEventType.UploadProgress,
+                loaded: progress.loadedBytes,
+                total: file.size
+              } as HttpEvent<any>);
+            }
+          })
+        ).pipe(
+          tap(() => {
+            this._uploadProgressSubject.next({
+              type: HttpEventType.Response,
+              status: 200,
+              statusText: 'OK',
+              url: blockBlobClient.url,
+              ok: true,
+              body: { fileName: fileName, url: blockBlobClient.url }
+            } as HttpEvent<any>);
+            console.log(`BlobStorageService: File "${fileName}" uploaded successfully via SDK!`);
+          }),
+          switchMap(() => {
+            return new Observable<string>(observer => {
+              const finalUrl = blockBlobClient.url.split('?')[0];
+              observer.next(finalUrl);
+              observer.complete();
+            });
+          }),
+          catchError(uploadError => {
+            console.error('BlobStorageService: Error during SDK upload:', uploadError);
+            this.notificationService.showError('File upload to Azure failed during transfer.');
+            this._uploadProgressSubject.error(uploadError);
+            return throwError(() => new Error('Azure Blob SDK upload failed.'));
+          })
+        );
       }),
       catchError(error => {
         let errorMessage = 'File upload failed.';
         if (error.url && error.url.includes('generate-upload-sas')) {
             if (error.status === 400 && error.error) {
-                errorMessage = `SAS request failed (400): ${error.error}`;
+              errorMessage = `SAS request failed (400): ${error.error}`;
             } else if (error.status === 500) {
-                errorMessage = 'Failed to get upload authorization (500). Please check backend logs.';
+              errorMessage = 'Failed to get upload authorization (500). Please check backend logs.';
             } else {
-                errorMessage = `Failed to get upload authorization: ${error.message || 'Unknown network error'}`;
+              errorMessage = `Failed to get upload authorization: ${error.message || 'Unknown network error'}`;
             }
-            console.error('Error fetching SAS URI:', error);
-        } else if (error.url && error.url.includes('blob.core.windows.net')) {
-            errorMessage = 'Direct upload to storage failed. Check SAS permissions, CORS, or network.';
-            console.error('Error from Azure Blob Storage (PUT request):', error);
+            console.error('BlobStorageService: Error fetching SAS URI:', error);
         } else if (error.message === 'Invalid SAS URI received from backend.') {
             errorMessage = 'Upload cancelled: Invalid SAS URI was provided by the backend.';
-            console.error('Internal logic error:', error);
+            console.error('BlobStorageService: Internal logic error (invalid SAS):', error);
         } else {
-            console.error('General upload error:', error);
+            console.error('BlobStorageService: General upload error in main pipe:', error);
         }
-
         this.notificationService.showError(errorMessage);
         return throwError(() => new Error(errorMessage));
       })
@@ -87,10 +123,9 @@ export class BlobStorageService {
   getDownloadSasUri(fileName: string): Observable<string> {
     let params = new HttpParams().set('fileName', fileName);
 
-    // Call ApiService to get the SAS URI (passing responseType: 'text')
     return this.apiService.get<string>(`${this.BlobBaseUrl}/generate-download-sas`, {
       params: params,
-      responseType: 'text' // This is the crucial part for ApiService
+      responseType: 'text'
     }).pipe(
       catchError(error => {
         this.notificationService.showError('Failed to get download link.');

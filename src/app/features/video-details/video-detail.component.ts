@@ -149,6 +149,19 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
     return 'N/A';
   }
 
+    /**
+   * Redirects to the video changelog page if the user is the owner.
+   */
+    viewChangelogs(): void {
+      if (this.video && this.isOwner) {
+        console.log(`Viewing logs for video Id: ${this.video.videoId}`)
+        this.router.navigate(['/video-changelogs', this.video.videoId]);
+      } else {
+        this.notificationService.showWarning('You do not have permission to view changelogs for this video.');
+      }
+    }
+  
+
   // get formattedDuration(): string {
   //   if (typeof this.video?.durationSeconds === 'number') {
   //     const totalSeconds = this.video.durationSeconds;
