@@ -78,7 +78,7 @@
           </div>
           <div *ngFor="let category of filteredCategories"
                class="px-4 py-2 cursor-pointer hover:bg-gray-100 flex justify-between items-center"
-               [class.bg-blue-100]="selectedCategory?.categoryId === category.categoryId"
+               [class.bg-blue-100]="selectedCategory?.categoryName === category.categoryName"
                (mousedown)="onCategoryClickInList(category, $event)">
             {{ category.categoryName }}
             <svg *ngIf="category.children && category.children.length > 0 && !isSearchingCategories" class="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

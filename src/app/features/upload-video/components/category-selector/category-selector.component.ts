@@ -24,7 +24,6 @@ export class CategorySelectorComponent implements OnInit, OnDestroy {
   isLoadingMainResults: boolean = false;
   showCreateNewCategoryOption: boolean = false;
 
-  // Renamed to better reflect "related" instead of strictly "parent"
   relatedCategorySearchControl = new FormControl<string>(''); 
   relatedSearchResults: CategoryDto[] = [];
   isLoadingRelatedResults: boolean = false;
@@ -81,7 +80,7 @@ export class CategorySelectorComponent implements OnInit, OnDestroy {
       const currentQuery = this.mainCategorySearchControl.value?.trim();
       this.showCreateNewCategoryOption = !!(currentQuery && currentQuery.length > 0 &&
                                          !results.some(c => c.categoryName.toLowerCase() === currentQuery.toLowerCase()) &&
-                                         !this.selectedCategory);
+                                         !this.selectedCategory?.categoryName);
       this.showMainSearchDropdown = true;
     });
 
@@ -127,8 +126,8 @@ export class CategorySelectorComponent implements OnInit, OnDestroy {
 
     if (this.selectedCategory) {
       this.mainCategorySearchControl.setValue(this.selectedCategory.categoryName, { emitEvent: false });
-      if (this.selectedCategory.categoryParent?.categoryName) {
-        this.relatedCategorySearchControl.setValue(this.selectedCategory.categoryParent.categoryName, { emitEvent: false }); // Renamed control
+      if (this.selectedCategory.parentCategoryName) {
+        this.relatedCategorySearchControl.setValue(this.selectedCategory.parentCategoryName, { emitEvent: false }); // Renamed control
       }
     }
   }
@@ -314,10 +313,9 @@ export class CategorySelectorComponent implements OnInit, OnDestroy {
     }
 
     this.isLoadingMainResults = true;
-    // Pass categoryId of the selected related category, or null if none selected.
-    const parentCategoryId = this.selectedRelatedCategory ? this.selectedRelatedCategory.categoryId : null;
+    const parentCategoryName = this.selectedRelatedCategory ? this.selectedRelatedCategory.parentCategoryName : null;
 
-    this.categoryService.createCategory(newCategoryName, parentCategoryId).pipe(
+    this.categoryService.createCategory(newCategoryName).pipe(
       finalize(() => this.isLoadingMainResults = false),
       takeUntil(this.destroy$)
     ).subscribe({

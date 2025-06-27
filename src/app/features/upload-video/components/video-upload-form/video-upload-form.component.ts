@@ -16,7 +16,7 @@ import { Subscription } from 'rxjs'; // Still needed for authSubscription
 import { NotificationService } from '../../../../core/services/notification.service';
 import { CategoryDto } from '../../../../shared/models/category';
 import { TagDto } from '../../../../shared/models/tag';
-import { VideoMetadataDto } from '../../../../shared/models/video';
+import { VideoMetadataDto, videoMetadataRequestDto } from '../../../../shared/models/video';
 import { User } from '../../../auth/models/user.model';
 import { AuthFacade } from '../../../auth/services/auth.facade';
 import { Router } from '@angular/router';
@@ -266,15 +266,12 @@ export class VideoUploadFormComponent implements OnInit, OnDestroy {
     this.isSubmittingMetadata = true;
     this.notificationService.showInfo('Saving video details...');
 
-    const videoTags: TagDto[] = this.selectedTags.map(tagName => ({ tagName: tagName }));
 
-    const videoMetadata: VideoMetadataDto = {
+    const videoMetadata: videoMetadataRequestDto = {
       videoName: this.uploadForm.get('name')?.value,
       videoDescription: this.uploadForm.get('description')?.value,
-      videoUrl: this.uploadedVideoUrl,
-      userId: this.currentUserId,
-      category: this.selectedCategory ?? undefined,
-      videoTags: videoTags
+      categoryName: this.selectedCategory?.categoryName ?? undefined,
+      videoTags: this.selectedTags
     };
 
     this.videoMetadataService.submitVideoMetadata(videoMetadata).pipe(

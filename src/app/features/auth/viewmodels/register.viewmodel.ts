@@ -55,6 +55,7 @@ export class RegisterViewModel {
     this._isLoading.next(true);
     // Destructure to exclude confirmPassword from payload sent to API
     const { confirmPassword, ...payload } = this.registerForm.value as RegisterPayload & { confirmPassword: string };
+    
 
     this.authFacade.register(payload).subscribe({
       next: () => {
@@ -64,7 +65,7 @@ export class RegisterViewModel {
       },
       error: (err: any) => {
         this._isLoading.next(false);
-        this._errorMessage.next(err.error?.message || 'Registration failed. Please try again.');
+        // this._errorMessage.next(err.error?.message || 'Registration failed. Please try again.');
         console.error('RegisterViewModel error:', err);
       }
     });

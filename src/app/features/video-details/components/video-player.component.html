@@ -1,13 +1,15 @@
 <div class="relative w-full max-w-4xl mx-auto bg-black rounded-lg overflow-hidden shadow-lg">
+  <!-- VIDEO ELEMENT -->
   <video
     #videoElement
     controls
-    class="block w-full h-auto"
+    class="block w-full h-auto bg-black z-10"
     [src]="videoUrl"
     (loadedmetadata)="onLoadedMetadata($event)"
     (canplay)="onCanPlay($event)"
     (waiting)="onWaiting($event)"
-    (playing)="onPlaying($event)"  (pause)="onPause($event)"
+    (playing)="onPlaying($event)"
+    (pause)="onPause($event)"
     (ended)="onEnded($event)"
     (error)="onError($event)"
     autoplay
@@ -16,24 +18,30 @@
     Your browser does not support the video tag.
   </video>
 
+  <!-- BUFFERING INDICATOR -->
   <div *ngIf="isLoading"
-       class="absolute inset-0 bg-black bg-opacity-70 flex flex-col justify-center items-center text-white text-lg z-10">
-    <div class="border-4 border-gray-300 border-t-white rounded-full w-10 h-10 animate-spin mb-2"></div>
-    <span>Buffering...</span>
+    class="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+      <div class="bg-black bg-opacity-60 rounded-lg px-4 py-2 flex flex-col items-center pointer-events-none">
+        <div class="animate-spin border-4 border-gray-300 border-t-white rounded-full w-10 h-10 mb-2"></div>
+        <span class="text-white text-sm font-medium">Buffering...</span>
+      </div>
   </div>
 
-  <!-- <div *ngIf="!isLoading && videoDuration !== 'Error'"
-       class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm z-50">
-    Duration: {{ videoDuration }}
+  <!-- ERROR MESSAGE
+  <div *ngIf="!isLoading && videoDuration === 'Error'"
+       class="absolute inset-0 flex items-center justify-center bg-red-700 bg-opacity-90 text-white text-center px-6 py-4 z-30">
+    <p class="text-lg font-semibold">⚠️ Failed to load video duration.</p>
   </div> -->
 
-  <div *ngIf="!isLoading && videoDuration === 'Error'"
-       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-700 bg-opacity-70 text-white p-4 rounded-lg text-lg text-center z-50">
-    Failed to load video duration.
+  <!-- VIDEO NOT READY MESSAGE -->
+  <div *ngIf="!isReadyToPlay && !isLoading && videoUrl && videoDuration !== 'Error'"
+       class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80 text-white text-center px-6 py-4 z-30">
+    <p class="text-lg font-semibold">⏳ Preparing your video...</p>
   </div>
 
-  <div *ngIf="!isReadyToPlay && !isLoading && videoUrl && videoDuration !== 'Error'"
-       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 bg-opacity-70 text-white p-4 rounded-lg text-lg text-center z-50">
-    Video not ready.
-  </div>
+  <!-- OPTIONAL: DURATION DISPLAY -->
+  <!-- <div *ngIf="!isLoading && videoDuration !== 'Error'"
+       class="absolute bottom-3 right-3 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-sm z-10">
+    ⏱ {{ videoDuration }}
+  </div> -->
 </div>

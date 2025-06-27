@@ -36,10 +36,10 @@
             <div *ngIf="updateVideoForm.controls.description.invalid && updateVideoForm.controls.description.touched" class="text-red-600 text-sm mt-1">
               Video description is required.
             </div>
-          </div>
+          </div>zzzzz
   
           <app-category-selector
-            [selectedCategory]="updateVideoForm.controls.selectedCategory.value"
+            [selectedCategory]="updateVideoForm.controls.selectedCategoryName.value ? {categoryName: updateVideoForm.controls.selectedCategoryName.value} : null"
             (categorySelected)="onCategorySelected($event)"
           ></app-category-selector>
   

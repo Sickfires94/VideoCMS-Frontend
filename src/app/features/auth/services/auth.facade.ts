@@ -68,18 +68,18 @@ export class AuthFacade {
     return this.authApi.register(payload).pipe(
       tap((response: AuthResponse) => {
         console.log(`Response: ${response.user.token}`)
-        this.tokenStorage.saveToken(response.user.token);
-        const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
-        this.tokenStorage.saveUser(user);
-        this.setAuthenticatedState(user);
-        this.notificationService.showSuccess('Login successful!'); // Success notification
-        this.router.navigateByUrl('/upload');
+        // this.tokenStorage.saveToken(response.user.token);
+        // const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
+        // this.tokenStorage.saveUser(user);
+        // this.setAuthenticatedState(user);
+        // this.notificationService.showSuccess('Login successful!'); // Success notification
+        this.router.navigateByUrl('/login');
       }),
-      catchError(error => {
-        console.error('AuthFacade: Registration error', error);
-        this.notificationService.showError('Registration failed. Please try again.');
-        return throwError(() => error);
-      })
+      // catchError(error => {
+      //   console.error('AuthFacade: Registration error', error);
+      //   this.notificationService.showError('Registration failed. Please try again.');
+      //   return throwError(() => error);
+      // })
     );
   }
 

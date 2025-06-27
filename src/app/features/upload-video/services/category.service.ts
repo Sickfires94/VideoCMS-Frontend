@@ -44,10 +44,10 @@ export class CategoryService {
    * @param parentCategoryId Optional: The ID of the parent category.
    * @returns An Observable that emits the newly created CategoryDto.
    */
-  createCategory(categoryName: string, parentCategoryId: number | null = null): Observable<CategoryDto> { // FIX: Changed parentCategoryName to parentCategoryId
+  createCategory(categoryName: string, parentCategoryName: string | null = null): Observable<CategoryDto> { // FIX: Changed parentCategoryName to parentCategoryId
     const payload: any = { categoryName: categoryName };
-    if (parentCategoryId !== null) { // Check for null, as 0 could be a valid ID
-      payload.categoryParentId = parentCategoryId; // FIX: Assign to categoryParentId
+    if (parentCategoryName !== null) { // Check for null, as 0 could be a valid ID
+      payload.parentCategoryName = parentCategoryName; // FIX: Assign to categoryParentId
     }
 
     return this.apiService.post<CategoryDto>(this.baseUrl, payload).pipe(

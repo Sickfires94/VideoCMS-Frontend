@@ -17,6 +17,7 @@ import { dateTimestampProvider } from 'rxjs/internal/scheduler/dateTimestampProv
 export class BlobStorageService {
   private readonly BlobBaseUrl = '/video/Blob';
   private readonly defaultBlobBlockSize = 4 * 1024 * 1024; // 4 MB
+  private readonly defaultConcurrentRequests = 5;
 
   private _uploadProgressSubject = new Subject<HttpEvent<any>>();
   public readonly uploadProgress$ = this._uploadProgressSubject.asObservable();
@@ -61,6 +62,7 @@ export class BlobStorageService {
           blockBlobClient.uploadBrowserData(file, {
             blockSize: this.defaultBlobBlockSize,
             maxSingleShotSize: this.defaultBlobBlockSize,
+            concurrency: this.defaultConcurrentRequests,
             blobHTTPHeaders: blobHttpHeaders,
             onProgress: (progress: TransferProgressEvent) => { // Type 'progress' correctly
               this._uploadProgressSubject.next({

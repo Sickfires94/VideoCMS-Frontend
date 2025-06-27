@@ -4,7 +4,7 @@ import { AuthGuard } from './core/guards/auth.guard'; // Ensure this path is cor
 import { VideoChangelogsPageComponent } from './features/video-changelogs/components/video-changelogs-page.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', redirectTo: 'search', pathMatch: 'full' },
 
   // Public routes (auth feature)
   {
@@ -38,8 +38,8 @@ export const routes: Routes = [
   {
     path: 'video-changelogs/:id', // New route for changelogs page
     component: VideoChangelogsPageComponent,
-    // canActivate: [AuthGuard] // Protect changelogs route as well
+    canActivate: [AuthGuard] // Protect changelogs route as well
   },
 
-  { path: '**', redirectTo: '/login' }
+  { path: '**', redirectTo: '/search' }
 ];

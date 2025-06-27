@@ -14,6 +14,7 @@ import { UploadVideoForm } from '../upload-video/models/upload';
 import { TagsGenerationService } from '../upload-video/services/tags-generation.service';
 import { VideoDetailService } from '../video-details/services/video-detail.service';
 import { VideoUpdateService } from './services/video-update.service';
+import { VideoMetadataResponseDto } from '../../shared/models/ResponseDtos/videoMetadata';
 
 
 @Component({
@@ -38,7 +39,7 @@ export class UpdateVideoComponent implements OnInit {
     description: FormControl<string>;
     suggestedTags: FormControl<string[]>;
     selectedTags: FormControl<string[]>;
-    selectedCategory: FormControl<CategoryDto | null>;
+    selectedCategoryName: FormControl<string | null>;
   }>;
 
   videoId: number | null = null;
@@ -48,7 +49,7 @@ export class UpdateVideoComponent implements OnInit {
   isLoadingSuggestedTags: boolean = false;
   isUpdatingVideo: boolean = false;
   isLoadingVideo: boolean = true;
-  InitialTags: string[] = []
+  // InitialTags: string[] = []
 
   constructor(
     private route: ActivatedRoute,
@@ -91,7 +92,7 @@ export class UpdateVideoComponent implements OnInit {
       description: new FormControl('', { nonNullable: true, validators: Validators.required }),
       suggestedTags: new FormControl<string[]>([], { nonNullable: true }),
       selectedTags: new FormControl<string[]>([], { nonNullable: true }),
-      selectedCategory: new FormControl<CategoryDto | null>(null),
+      selectedCategoryName: new FormControl<string | null>(null),
     });
   }
 
@@ -100,15 +101,23 @@ export class UpdateVideoComponent implements OnInit {
     this.videoDetailService.getVideoById(videoId).pipe(
       finalize(() => this.isLoadingVideo = false)
     ).subscribe({
-      next: (videoData: VideoMetadataDto) => {
-        this.originalVideoMetadata = videoData;
+      next: (videoData: VideoMetadataResponseDto) => {
+        this.originalVideoMetadata = {
+          videoId: videoData.videoId,
+          videoName: videoData.videoName,
+          videoDescription: videoData.videoDescription,
+          videoUrl: videoData.videoUrl,
+          videoUploadDate: videoData.videoUploadDate,
+          categoryName: videoData.categoryName,
+          userName : videoData.userName
+        };
         this.updateVideoForm.patchValue({
           name: videoData.videoName,
           description: videoData.videoDescription,
-          selectedCategory: videoData.category || null,
-          selectedTags: videoData.videoTags?.map(tag => tag.tagName) || []
+          selectedCategoryName: videoData.categoryName ?? null,
+          selectedTags: videoData.videoTags
         });
-        this.InitialTags = videoData.videoTags?.map(tag => tag.tagName) || []
+        // this.InitialTags = videoData.videoTags ?? [];
         this.generateSuggestedTags();
       },
       error: (err) => {
@@ -120,7 +129,7 @@ export class UpdateVideoComponent implements OnInit {
   }
 
   onCategorySelected(category: CategoryDto | null): void {
-    this.updateVideoForm.controls.selectedCategory.setValue(category);
+    this.updateVideoForm.controls.selectedCategoryName.setValue(category?.categoryName ?? null);
   }
 
   onTagsChanged(tags: string[]): void {
@@ -161,24 +170,19 @@ export class UpdateVideoComponent implements OnInit {
 
     this.isUpdatingVideo = true;
 
-    this.updateVideoForm.controls.selectedTags.setValue(
-      this.updateVideoForm.controls.selectedTags.value.filter(
-        item => !this.InitialTags.includes(item) // <-- FIX IS HERE
-      )
-    );
+    // this.updateVideoForm.controls.selectedTags.setValue(
+    //   this.updateVideoForm.controls.selectedTags.value.filter(
+    //     item => !this.InitialTags.includes(item) // <-- FIX IS HERE
+    //   )
+    // );
 
-    // Construct the payload for the backend.
-    // Copy original metadata and apply form updates.
     const completeVideoDto: VideoMetadataDto = {
-      ...this.originalVideoMetadata, // Spread to copy all existing properties (including videoUrl)
-      videoId: this.originalVideoMetadata.videoId, // Ensure ID is explicit from original
+      ...this.originalVideoMetadata,
+      videoId: this.originalVideoMetadata.videoId,
       videoName: this.updateVideoForm.controls.name.value,
       videoDescription: this.updateVideoForm.controls.description.value,
-      category: this.updateVideoForm.controls.selectedCategory.value || undefined,
-      // Map selectedTags (string[]) back to TagDto[]
-      videoTags: this.updateVideoForm.controls.selectedTags.value.map(tagName => ({ tagName: tagName })),
-      // playableVideoUrl is derived, not sent back
-      playableVideoUrl: undefined
+      categoryName: this.updateVideoForm.controls.selectedCategoryName.value || undefined,
+      videoTags: this.updateVideoForm.controls.selectedTags.value,
     };
 
     // --- FIX: Pass the completeVideoDto (which now includes videoUrl) ---
@@ -193,7 +197,7 @@ export class UpdateVideoComponent implements OnInit {
         this.router.navigate(['/video', updatedVideo.videoId]);
       },
       error: (err) => {
-        this.notificationService.showError('Failed to update video. Please check console for details.');
+        // this.notificationService.showError('Failed to update video. Please check console for details.');
         console.error('Error updating video:', err);
       }
     });

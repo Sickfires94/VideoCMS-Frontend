@@ -1,19 +1,23 @@
-<!-- src/app/features/video-searching/components/video-card/video-card.component.html -->
 <div [routerLink]="['/video', video.videoId]" class="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300">
-  <img [src]="thumbnailUrl" alt="{{ video.videoName }}" class="w-full h-48 object-cover">
+  <!-- Placeholder Thumbnail Block -->
+  <div class="w-full h-48 bg-gray-100 flex items-center justify-center">
+    <!-- Inline video icon -->
+    <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+    </svg>
+  </div>
+
+  <!-- Card Body -->
   <div class="p-4">
-    <!-- --- FIX: Apply highlight pipe to video name --- -->
     <h2 class="text-lg font-semibold text-gray-800 truncate mb-1" [innerHTML]="video.videoName | highlight:searchTerm"></h2>
     <h3 class="text-md font-medium text-gray-700 truncate mb-1">
-        Uploaded by: <span [innerHTML]="video.userName | highlight:searchTerm"></span> <!-- --- FIX: Apply highlight to username --- -->
+        Uploaded by: <span [innerHTML]="video.userName | highlight:searchTerm"></span>
     </h3>
     <p class="text-gray-600 text-sm mb-2">
       {{ video.videoUploadDate | date:'mediumDate' }}
     </p>
     <div class="flex flex-wrap gap-1 text-xs">
-      <!-- --- FIX: Apply highlight to category name --- -->
       <span *ngIf="video.categoryName" class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full" [innerHTML]="video.categoryName | highlight:searchTerm"></span>
-      <!-- --- FIX: Apply highlight to tags --- -->
       <span *ngFor="let tag of video.videoTagNames" class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full" [innerHTML]="tag | highlight:searchTerm"></span>
     </div>
   </div>

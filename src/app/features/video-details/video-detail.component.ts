@@ -28,7 +28,7 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
   video: VideoMetadataDto | null = null;
   isLoading: boolean = true;
   errorMessage: string | null = null;
-  currentUserId: number | null = null; // Stores the current logged-in user's ID (assuming string for GUID)
+  currentUserName: string | null = null; // Stores the current logged-in user's ID (assuming string for GUID)
 
   isOwner: boolean = false; // Property to store ownership status
   isDeleting: boolean = false; // <--- NEW: Flag for delete operation in progress
@@ -52,7 +52,7 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         // Assuming your AuthFacade now correctly provides a 'User' object with 'id: string'
-        this.currentUserId = user?.userId ?? null; // Use user.id from the User model (which is string)
+        this.currentUserName = user?.userName ?? null; // Use user.id from the User model (which is string)
         this.updateOwnershipStatus();
       });
 
@@ -106,7 +106,7 @@ export class VideoDetailComponent implements OnInit, OnDestroy {
    */
   private updateOwnershipStatus(): void {
     // Ensure video.userId is also a string for direct comparison with currentUserId
-    this.isOwner = !!this.video && !!this.currentUserId && this.video.userId === this.currentUserId;
+    this.isOwner = !!this.video && !!this.currentUserName && this.video.userName === this.currentUserName;
   }
 
   /**

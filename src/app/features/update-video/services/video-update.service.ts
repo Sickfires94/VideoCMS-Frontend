@@ -4,8 +4,9 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { VideoMetadataDto } from '../../../shared/models/video';
+import { VideoMetadataDto, videoMetadataRequestDto } from '../../../shared/models/video';
 import { UploadVideoForm } from '../../upload-video/models/upload';
+import { VideoMetadataUpdateDto } from '../../../shared/models/RequestDtos/video';
 
 @Injectable({
   providedIn: 'root' // Ensures it's a singleton and accessible throughout the app
@@ -37,21 +38,18 @@ export class VideoUpdateService {
     // Construct the payload for the backend.
     // Important: Adapt this payload exactly to what your backend's PUT /api/videos/{id} endpoint expects.
     // For metadata updates, `videoFile` should not be included here.
-    const updatePayload: VideoMetadataDto = UpdatedVideoMetadata;
-
-    // Clean up undefined fields if backend strictness requires it
-    if (!updatePayload.category) {
-      delete updatePayload.category;
-    }
-    if (!updatePayload.videoTags || updatePayload.videoTags.length === 0) {
-      delete updatePayload.videoTags;
-    }
-
+    const updatePayload: videoMetadataRequestDto = {
+      videoName: UpdatedVideoMetadata.videoName,
+      videoDescription: UpdatedVideoMetadata.videoDescription,
+      videoId: UpdatedVideoMetadata.videoId,
+      videoTags: UpdatedVideoMetadata.videoTags ?? [],
+      categoryName: UpdatedVideoMetadata.categoryName ?? undefined
+    };
     const url = `${this.baseUrl}/${videoId}`;
 
     return this.apiService.post<VideoMetadataDto>(url, updatePayload).pipe(
       catchError(error => {
-        const errorMessage = `Failed to update video: ${UpdatedVideoMetadata.videoName}. Details: ${error.message || 'Unknown error'}`;
+        const errorMessage = `Failed to update video`;
         this.notificationService.showError(errorMessage);
         console.error(errorMessage, error);
         // Re-throw the error to allow component to handle it if needed

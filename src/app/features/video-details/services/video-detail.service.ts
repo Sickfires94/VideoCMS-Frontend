@@ -6,6 +6,7 @@ import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { VideoMetadataDto } from '../../../shared/models/video';
 import { HttpParams } from '@angular/common/http';
+import { VideoMetadataResponseDto } from '../../../shared/models/ResponseDtos/videoMetadata';
 
 @Injectable({
   providedIn: 'root' // Provided at root for global access
@@ -25,7 +26,7 @@ export class VideoDetailService {
    * @param videoId The ID of the video to fetch.
    * @returns An Observable that emits the VideoMetadataDto.
    */
-  getVideoById(videoId: number): Observable<VideoMetadataDto> {
+  getVideoById(videoId: number): Observable<VideoMetadataResponseDto> {
     if (!videoId) {
       const errorMsg = 'Video ID is required to fetch video details.';
       this.notificationService.showError(errorMsg);

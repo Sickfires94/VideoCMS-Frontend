@@ -1,19 +1,22 @@
-import { User } from "../../features/auth/models/user.model";
-import { CategoryDto } from "./category";
-import { TagDto } from "./tag";
 
 export interface VideoMetadataDto {
-    videoId?: number; // Renamed from 'id', type 'number' (int32), optional for new videos
-    videoName: string; // Renamed from 'name'
-    videoDescription?: string; // Renamed from 'description', nullable
-    videoUrl: string; // Matches
-    videoTags?: TagDto[]; // IMPORTANT: Now an array of TagDto objects, not string[]
-    category?: CategoryDto; // Renamed from 'categoryId' to match backend 'categoryId' type 'number'
-    // category is a nested object, omit or define if full object needed
-    userId: number; // Renamed from 'userId' to match backend 'userId' type 'number'
-    user?: User;
-    videoUploadDate?: string; // Added, type 'string' (date), optional for new videos
-    videoUpdatedDate?: string; // Added, type 'string' (date), optional for new videos
-  
-    playableVideoUrl? : string
-  }
+  videoId: number; // Renamed from 'id', type 'number' (int32), optional for new videos
+  videoName: string; // Renamed from 'name'
+  videoDescription?: string; // Renamed from 'description', nullable
+  videoUrl: string; // Matches
+  videoTags?: string[]; // IMPORTANT: Now an array of TagDto objects, not string[]
+  categoryName?: string; // Renamed from 'categoryId' to match backend 'categoryId' type 'number'
+  userName: string;
+  videoUploadDate?: string; // Added, type 'string' (date), optional for new videos
+
+  playableVideoUrl? : string;
+}
+
+export interface videoMetadataRequestDto {
+  videoId?: number;
+  videoName: string;
+  videoDescription?: string;
+  videoTags: string[] | [];
+  categoryName? : string;
+
+}
