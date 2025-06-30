@@ -4,9 +4,9 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { VideoMetadataDto, videoMetadataRequestDto } from '../../../shared/models/video';
+import { VideoMetadataDto, videoMetadataRequestDto } from '../../../shared/models/videoMetadata';
 import { UploadVideoForm } from '../../upload-video/models/upload';
-import { VideoMetadataUpdateDto } from '../../../shared/models/RequestDtos/video';
+import { VideoMetadataUpdateDto } from '../../../shared/models/RequestDtos/videoMetadata';
 
 @Injectable({
   providedIn: 'root' // Ensures it's a singleton and accessible throughout the app

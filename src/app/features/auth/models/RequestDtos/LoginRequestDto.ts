@@ -1,4 +1,4 @@
-export interface LoginPayload {
+export interface LoginRequestDto {
     userEmail: string;
     userPassword: string;
   }

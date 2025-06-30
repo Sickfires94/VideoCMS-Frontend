@@ -3,7 +3,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { VideoMetadataDto, videoMetadataRequestDto } from '../../../shared/models/video';
+import { VideoMetadataDto, videoMetadataRequestDto } from '../../../shared/models/videoMetadata';
 import { VideoMetadataChangeLog } from '../../../shared/models/video-metadata-changelog';
 
 

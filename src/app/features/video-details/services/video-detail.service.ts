@@ -4,7 +4,6 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { ApiService } from '../../../core/api/api.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { VideoMetadataDto } from '../../../shared/models/video';
 import { HttpParams } from '@angular/common/http';
 import { VideoMetadataResponseDto } from '../../../shared/models/ResponseDtos/videoMetadata';
 
@@ -43,7 +42,7 @@ export class VideoDetailService {
 
     const metadataUrl = `${this.videoBaseUrl}/${videoId}`; // e.g., /api/videos/123
 
-    return this.apiService.get<VideoMetadataDto>(metadataUrl).pipe(
+    return this.apiService.get<VideoMetadataResponseDto>(metadataUrl).pipe(
       switchMap(videoMetadata => {
         if (!videoMetadata || !videoMetadata.videoUrl) {
           const errorMsg = `Video metadata or public video URL not found for ID: ${videoId}`;
@@ -51,7 +50,8 @@ export class VideoDetailService {
           return throwError(() => new Error(errorMsg));
         }
 
-        // --- CHANGE HERE: Pass videoMetadata.videoUrl (the full public URL) directly ---
+        
+
         return this.getPlayableVideoUrl(videoMetadata.videoUrl).pipe(
           tap(sasUrl => {
             videoMetadata.playableVideoUrl = sasUrl;

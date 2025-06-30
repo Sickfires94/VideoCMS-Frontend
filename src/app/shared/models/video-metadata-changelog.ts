@@ -1,7 +1,7 @@
 // src/app/shared/models/video-metadata-changelog.model.ts
 export interface VideoMetadataChangeLog {
     videoId: number;
-    changeTime: string; // Changed from 'changeDate' to 'changeTime'
+    changeTime: string;
     changeType: string;
   
     // Specific properties for video name changes

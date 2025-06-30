@@ -4,12 +4,13 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { TokenStorageService } from '../../../core/services/token-storage.service';
-import { AuthResponse } from '../models/auth-response.model';
-import { LoginPayload } from '../models/login-payload.model';
-import { RegisterPayload } from '../models/register-payload.model';
 import { User } from '../models/user.model';
 import { AuthApiService } from './auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LoginRequestDto } from '../models/RequestDtos/LoginRequestDto';
+import { LoginResponseDto } from '../models/ResponseDtos/LoginResponseDto';
+import { RegisterRequestDto } from '../models/RequestDtos/RegisterRequestDto';
+import { UserResponseDto } from '../models/ResponseDtos/UserResponseDto';
 
 @Injectable({
   providedIn: 'root'
@@ -44,12 +45,12 @@ export class AuthFacade {
     this._currentUser.next(user);
   }
 
-  public login(payload: LoginPayload): Observable<AuthResponse> {
+  public login(payload: LoginRequestDto): Observable<LoginResponseDto> {
     return this.authApi.login(payload).pipe(
-      tap((response: AuthResponse) => {
-        console.log(`Response: ${response.user.token}`)
-        this.tokenStorage.saveToken(response.user.token);
-        const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
+      tap((response: LoginResponseDto) => {
+        console.log(`Response: ${response.token}`)
+        this.tokenStorage.saveToken(response.token);
+        const user = response.user;
         this.tokenStorage.saveUser(user);
         this.setAuthenticatedState(user);
         this.notificationService.showSuccess('Login successful!'); // Success notification
@@ -64,22 +65,17 @@ export class AuthFacade {
     );
   }
 
-  public register(payload: RegisterPayload): Observable<AuthResponse> {
+  public register(payload: RegisterRequestDto): Observable<UserResponseDto> {
     return this.authApi.register(payload).pipe(
-      tap((response: AuthResponse) => {
-        console.log(`Response: ${response.user.token}`)
-        // this.tokenStorage.saveToken(response.user.token);
-        // const user = {userId: response.user.userId, userName: response.user.userName, userEmail: response.user.userEmail}
-        // this.tokenStorage.saveUser(user);
-        // this.setAuthenticatedState(user);
-        // this.notificationService.showSuccess('Login successful!'); // Success notification
+      tap((response: UserResponseDto) => {
+        // console.log(`Response: ${response.user.token}`)
         this.router.navigateByUrl('/login');
       }),
-      // catchError(error => {
-      //   console.error('AuthFacade: Registration error', error);
-      //   this.notificationService.showError('Registration failed. Please try again.');
-      //   return throwError(() => error);
-      // })
+      catchError(error => {
+        console.error('AuthFacade: Registration error', error);
+        this.notificationService.showError('Registration failed. Please try again.');
+        return throwError(() => error);
+      })
     );
   }
 

@@ -7,7 +7,7 @@ import { VideoDeleteService } from './services/video-delete.service'; // <--- NE
 import { finalize, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
-import { VideoMetadataDto } from '../../shared/models/video';
+import { VideoMetadataDto } from '../../shared/models/videoMetadata';
 import { VideoPlayerComponent } from './components/video-player.component';
 import { AuthFacade } from '../auth/services/auth.facade';
 import { NotificationService } from '../../core/services/notification.service'; // <--- NEW: Import NotificationService

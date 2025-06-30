@@ -7,7 +7,7 @@ import { finalize, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { NotificationService } from '../../core/services/notification.service';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { CategoryDto } from '../../shared/models/category';
-import { VideoMetadataDto } from '../../shared/models/video';
+import { VideoMetadataDto } from '../../shared/models/videoMetadata';
 import { CategorySelectorComponent } from '../upload-video/components/category-selector/category-selector.component';
 import { TagInputComponent } from '../upload-video/components/tag-input/tag-input.component';
 import { UploadVideoForm } from '../upload-video/models/upload';

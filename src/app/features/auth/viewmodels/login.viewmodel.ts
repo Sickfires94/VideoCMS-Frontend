@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthFacade } from '../services/auth.facade';
-import { LoginPayload } from '../models/login-payload.model';
+import { LoginPayload } from '../models/RequestDtos/LoginRequestDto';
 
 @Injectable() // Not a global singleton; provided per component instance
 export class LoginViewModel {

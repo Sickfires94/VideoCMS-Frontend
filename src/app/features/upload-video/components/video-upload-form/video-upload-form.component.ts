@@ -16,7 +16,7 @@ import { Subscription } from 'rxjs'; // Still needed for authSubscription
 import { NotificationService } from '../../../../core/services/notification.service';
 import { CategoryDto } from '../../../../shared/models/category';
 import { TagDto } from '../../../../shared/models/tag';
-import { VideoMetadataDto, videoMetadataRequestDto } from '../../../../shared/models/video';
+import { VideoMetadataDto, videoMetadataRequestDto } from '../../../../shared/models/videoMetadata';
 import { User } from '../../../auth/models/user.model';
 import { AuthFacade } from '../../../auth/services/auth.facade';
 import { Router } from '@angular/router';
